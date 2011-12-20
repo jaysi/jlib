@@ -1,0 +1,9 @@
+LAST:
+	-working on rm_cell, rm_data_seg needs n arg.	
+NEXT:
+	
+CNT:
+	-5 c in src/jnmod
+	-? c in src
+	-28 h in include
+	
