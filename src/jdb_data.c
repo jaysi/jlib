@@ -220,10 +220,14 @@ int _jdb_find_data_direct(struct jdb_handle *h, struct jdb_table *table,
 
 }
 
-static inline int _jdb_load_data_blk(struct jdb_handle* h, struct jdb_table* table, jdb_bid_t bid){
+static inline int _jdb_load_data_blk(	struct jdb_handle* h,
+					struct jdb_table* table, jdb_bid_t bid){
 	struct jdb_cell_data_blk *blk;
-
+	struct jdb_map_blk_entry* m_ent;
 	int ret;
+	
+	m_ent = _jdb_get_map_entry_ptr(h, bid);
+	if(!m_ent) return -JE_NULLPTR;
 
 	blk = (struct jdb_cell_data_blk *)
 	    malloc(sizeof(struct jdb_cell_data_blk));
@@ -232,7 +236,7 @@ static inline int _jdb_load_data_blk(struct jdb_handle* h, struct jdb_table* tab
 	}
 	blk->bitmap = NULL;
 	blk->bid = bid;
-	ret = _jdb_read_data_blk(h, blk);
+	ret = _jdb_read_data_blk(h, table, blk, m_ent->dtype);
 	if (ret < 0) {
 		return ret;
 	}
@@ -337,9 +341,12 @@ int _jdb_load_data(struct jdb_handle *h, struct jdb_table *table, uchar type)
 
 	jdb_bid_t *bid;
 
-	jdb_bid_t nbid, i;
-
+	jdb_bid_t nbid, i;	
+	struct jdb_map_blk_entry* m_ent;
 	int ret;
+	
+	m_ent = _jdb_get_map_entry_ptr(h, *bid);
+	if(!m_ent) return -JE_NULLPTR;
 
 	ret =
 	    _jdb_list_map_match(h, type, 0, table->main.hdr.tid, 0,
@@ -376,7 +383,7 @@ int _jdb_load_data(struct jdb_handle *h, struct jdb_table *table, uchar type)
 
 		blk->bid = bid[i];
 
-		ret = _jdb_read_data_blk(h, blk);
+		ret = _jdb_read_data_blk(h, table, blk, m_ent->dtype);
 
 		if (ret < 0) {
 

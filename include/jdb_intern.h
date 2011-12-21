@@ -710,6 +710,7 @@ int _jdb_list_map_match(struct jdb_handle *h, jdb_blk_t btype,
 jdb_bid_t _jdb_find_first_map_match(struct jdb_handle *h, jdb_blk_t btype,
 				    jdb_data_t dtype, jdb_tid_t tid,
 				    jdb_bent_t nful, uchar cmp_flags);
+struct jdb_map_blk_entry* _jdb_get_map_entry_ptr(struct jdb_handle* h, jdb_bid_t bid);				    
 
 /*
 	memmory

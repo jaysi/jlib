@@ -363,6 +363,7 @@ int _jdb_load_fav_blocks(struct jdb_handle* h, struct jdb_table* table){
 	jdb_bid_t* bid_list;
 	int ret = 0;
 	struct jdb_cell_data_blk* blk, *first, *last;
+	struct jdb_map_blk_entry* m_ent;
 	
 	n = h->conf.fav_load;
 	
@@ -390,7 +391,9 @@ int _jdb_load_fav_blocks(struct jdb_handle* h, struct jdb_table* table){
 		}
 
 		blk->bid = bid_list[i];
-		ret = _jdb_read_data_blk(h, blk);
+		m_ent = _jdb_get_map_entry_ptr(h, blk->bid);
+		if(!m_ent) continue;		
+		ret = _jdb_read_data_blk(h, table, blk, m_ent->dtype);
 		if(ret < 0)
 			continue;		
 		

@@ -551,7 +551,8 @@ int jdb_add_cell(struct jdb_handle *h,
 
 	if ((ret =
 	     _jdb_add_celldef(h, table, row, col, dtype, datalen,
-			      JDB_ID_INVAL, JDB_BENT_INVAL, &celldef_blk, &celldef_entry))<0){
+			      JDB_ID_INVAL, JDB_BENT_INVAL, &celldef_blk,
+			      &celldef_entry))<0){
 
 		return ret;
 
@@ -594,7 +595,7 @@ int jdb_add_cell(struct jdb_handle *h,
 							typedef_blk,
 							typedef_entry,
 							data,
-							datalen);
+							datalen, 1);
 		
 			if(ret < 0){
 				free(cell->data);
