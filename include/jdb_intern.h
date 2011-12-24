@@ -508,9 +508,9 @@ struct jdb_wr_fifo_entry{
 	jdb_bid_t nblocks;
 	jdb_bid_t* bid_list;
 	uint32_t bufsize;
-	uchar *hdr;
+	uchar* hdrbuf;
 	uchar* buf;
-	struct jdb_wr_fifo* next;
+	struct jdb_wr_fifo_entry* next;
 };
 
 struct jdb_wr_fifo{

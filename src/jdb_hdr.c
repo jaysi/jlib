@@ -28,6 +28,34 @@ uint16_t _jdb_get_hdr_flag(struct jdb_handle* h, int lock){
 	return flags;
 }
 */
+
+int _jdb_hdr_to_buf(struct jdb_handle* h, uchar** buf, int alloc){
+	
+	if(alloc){
+		*buf = (uchar*)malloc(JDB_HDR_SIZE);
+		if(!(*buf)) return -JE_MALOC;
+	}
+	
+	_jdb_lock_handle(h);
+
+	if (!(_jdb_get_handle_flag(h, 0) & JDB_HMODIF)) {
+		_jdb_unlock_handle(h);
+		if(alloc) free(*buf);
+		return -JE_EMPTY;
+	}
+
+	_jdb_pack_hdr(&h->hdr, *buf);
+
+	_jdb_encrypt(h, *buf, *buf, JDB_HDR_SIZE);
+
+	_jdb_unset_handle_flag(h, JDB_HMODIF, 0);
+
+	_jdb_unlock_handle(h);
+	
+	return 0;
+	
+}
+
 int _jdb_write_hdr(struct jdb_handle *h)
 {
 	uchar buf[JDB_HDR_SIZE];
@@ -36,7 +64,7 @@ int _jdb_write_hdr(struct jdb_handle *h)
 	_jdb_lock_handle(h);
 
 	if (!(_jdb_get_handle_flag(h, 0) & JDB_HMODIF)) {
-		_jdb_unlock_handle(h);
+		_jdb_unlock_handle(h);		
 		return 0;
 	}
 

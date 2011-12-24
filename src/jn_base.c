@@ -8,6 +8,7 @@
 #include "jnet_internals.h"
 
 #ifndef __WIN32
+#include "sys/wait.h"
 #include "unistd.h"
 #include "sys/socket.h"
 #include "arpa/inet.h"
@@ -27,7 +28,6 @@
 #ifdef linux
 #include "error.h"
 #endif
-#include "sys/wait.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
@@ -47,7 +47,10 @@ void *get_in_addr(struct sockaddr *sa)
 		return &(((struct sockaddr_in *)sa)->sin_addr);
 	}
 
+#ifndef _WIN32
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+#endif	
+
 }
 
 static inline int _jn_assert_plain(jn_pkt * pkt)
@@ -310,8 +313,8 @@ int send_all(int fd, uchar * buf, uint32_t * len, struct timeval *tv)
 				if (gettimeofday(&tv2, NULL) == -1) {
 					return -JE_GETTIME;
 				}
-				tv->tv_sec = tv2->tv_sec - tv1->tv_sec;
-				tv->tv_usec = tv2->tv_usec - tv1->tv_usec;	//TODO:bad imp.
+				tv->tv_sec = tv2.tv_sec - tv1.tv_sec;
+				tv->tv_usec = tv2.tv_usec - tv1.tv_usec;	//TODO:bad imp.
 #endif
 				if ((tv->tv_sec == 0) && (tv->tv_usec == 0))
 					break;
@@ -406,13 +409,13 @@ int recv_all(int fd, uchar * buf, uint32_t * len, struct timeval *tv)
 					return -JE_GETTIME;
 				}
 				//to avoid integer overflow
-				if (tv2->tv_sec > tv1->tv_sec) {
-					tv->tv_sec = tv2->tv_sec - tv1->tv_sec;
+				if (tv2.tv_sec > tv1.tv_sec) {
+					tv->tv_sec = tv2.tv_sec - tv1.tv_sec;
 				} else
 					tv->tv_sec = 0L;
-				if (tv2->tv_usec > tv1->tv_usec) {
+				if (tv2.tv_usec > tv1.tv_usec) {
 					tv->tv_usec =
-					    tv2->tv_usec - tv1->tv_usec;
+					    tv2.tv_usec - tv1.tv_usec;
 				} else
 					tv->tv_usec = 0L;
 #endif
@@ -531,12 +534,12 @@ int recv_pkt_all(int fd, uchar * buf, uint32_t * len, struct timeval *tv,
 				return -JE_GETTIME;
 			}
 			//to avoid integer overflow
-			if (tv2->tv_sec > tv1->tv_sec) {
-				tv->tv_sec = tv2->tv_sec - tv1->tv_sec;
+			if (tv2.tv_sec > tv1.tv_sec) {
+				tv->tv_sec = tv2.tv_sec - tv1.tv_sec;
 			} else
 				tv->tv_sec = 0L;
-			if (tv2->tv_usec > tv1->tv_usec) {
-				tv->tv_usec = tv2->tv_usec - tv1->tv_usec;
+			if (tv2.tv_usec > tv1.tv_usec) {
+				tv->tv_usec = tv2.tv_usec - tv1.tv_usec;
 			} else
 				tv->tv_usec = 0L;
 #endif

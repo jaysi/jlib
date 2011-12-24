@@ -4,7 +4,7 @@ void* _jdb_write_thread(void* arg){
 	struct jdb_handle* h = (struct jdb_handle*)arg;
 	int oldcancelstate;
 	struct jdb_wr_fifo_entry* entry;
-	//jdb_bid_t
+	jdb_bid_t i, pos;
 	
 	//EXIT: if !bufsize
 	
@@ -25,20 +25,19 @@ void* _jdb_write_thread(void* arg){
 		
 		//write here		
 		
-		if(entry->hdrbuf){
-			_jdb_write_hdr(h);
-		}
-		
+		if(entry->hdrbuf)			
+			_jdb_seek_write(h, entry->hdrbuf, JDB_HDR_SIZE, 0);
+				
 		i = 0;		
 		for(pos = 0; pos < entry->bufsize; pos+=h->hdr.blocksize){
-			_jdb_write_block(h, entry->buf + pos, entry->bid_list[i]);
+			_jdb_write_block(h, entry->buf + pos, entry->bid_list[i], 0x00);
 			assert(i <= entry->nblocks);
 			i++;
 		}				
 		
 		pthread_setcancelstate(oldcancelstate, NULL);	
 		_unlock_mx(&h->rdmx);
-		
+				
 		if(entry->hdrbuf) free(entry->hdrbuf);
 		free(entry->bid_list);
 		free(entry->buf);
@@ -51,6 +50,8 @@ void* _jdb_write_thread(void* arg){
 }
 
 int _jdb_init_wr_thread(struct jdb_handle* h){
+	
+	int ret;
 
 	pthread_attr_t tattr;
 
@@ -77,8 +78,7 @@ int _jdb_init_wr_thread(struct jdb_handle* h){
 
 	if (_create_thread(&(h->wrthid), &tattr, _jdb_write_thread, (void *)h)
 	    < 0) {
-		ret = -JE_THREAD;
-		goto end;
+		ret = -JE_THREAD;		
 	}
 
 	pthread_attr_destroy(&tattr);
@@ -117,7 +117,7 @@ int _jdb_request_wr_thread_exit(struct jdb_handle* h){
 }
 
 int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
-	jdb_bid_t i, nbids;	
+	jdb_bid_t i, nbids, j;	
 	struct jdb_wr_fifo_entry* entry;
 	struct jdb_cell_data_blk* data_blk;
 	struct jdb_cell_data_ptr_blk* data_ptr_blk;
@@ -134,28 +134,33 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 
 	nbids = table->map_chg_list_size + table->nwrblk;
 
-	entry->bid_list = nbids*sizeof(jdb_bid_t);
+	entry->bid_list = (jdb_bid_t*)malloc(nbids*sizeof(jdb_bid_t));
 	if(!entry->bid_list){
 		free(entry);
 		return -JE_MALOC;
 	}
-
-	if(h->flags & JDB_HMODIF){
-		entry->hdrbuf = (uchar*)malloc(JDB_HDR_SIZE);
-		if(!entry->hdrbuf){
+	
+	switch(_jdb_hdr_to_buf(h, &entry->hdrbuf, 1)){
+		case -JE_MALOC:
 			free(entry);
 			free(entry->bid_list);
 			return -JE_MALOC;
-		}
-	} else entry->hdrbuf = NULL;
+		case -JE_EMPTY:
+			entry->hdrbuf = NULL;
+			break;
+		default:
+			break;				
+	}
 	
 	entry->nblocks = nbids;
 	entry->bufsize = (nbids)*h->hdr.blocksize;
 	entry->buf = (uchar*)malloc(entry->bufsize);	
 	if(!entry->buf){
+		
 		if(entry->hdrbuf){
 			free(entry->hdrbuf);
 		}
+		
 		free(entry->bid_list);
 		free(entry);
 		return -JE_MALOC;
@@ -221,13 +226,13 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	
 	if(table->main.write){
 			_jdb_pack_table_def(h, &table->main, entry->buf + (i*h->hdr.blocksize));
-			entry->bid_list[i] = table->tdef_main_bid;
+			entry->bid_list[i] = table->table_def_bid;
 			i++;
 			table->main.write = 0;
 	}
 	
 	for(j = 0; j < table->map_chg_list_size; j++){
-		for(map = table->map_list.first; map; map = map->next){
+		for(map = h->map_list.first; map; map = map->next){
 			if(map->bid == table->map_chg_list[j]){
 				_jdb_pack_map(h, map, entry->buf + (i*h->hdr.blocksize));
 				entry->bid_list[i] = table->map_chg_list[j];		

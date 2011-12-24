@@ -10,13 +10,14 @@
 #include "jnet_internals.h"
 
 #ifndef __WIN32
+#include "sys/wait.h"
 #include "unistd.h"
 #include "sys/socket.h"
 #include "arpa/inet.h"
 #include "netinet/in.h"
 #include <netdb.h>
 #else
-#include "winsock.h"
+#include "winsock2.h"
 #define close(fd) close_socket(fd)
 #endif
 #include "sys/types.h"
@@ -30,7 +31,6 @@
 #ifdef linux
 #include "error.h"
 #endif
-#include "sys/wait.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>

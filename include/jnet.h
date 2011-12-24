@@ -21,13 +21,13 @@
 
 //#include <linux/time.h>
 #include <sys/time.h>
-//#ifndef _WIN32
+#ifndef _WIN32
 #include <sys/wait.h>
 #include <poll.h>
 #include <netinet/in.h>
-//#else
-//#include <winsock2.h>
-//#endif
+#else
+#include <winsock2.h>
+#endif
 #ifdef linux
 #include <aio.h>
 #endif
