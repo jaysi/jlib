@@ -140,8 +140,11 @@ struct jdb_handle {
 	uint16_t flags;
 
 	//journalling
-	int jfd;
+	FILE* jf;
 	jthread_t jrnlthid;
+	jmx_t jmx;
+	jsem_t jsem;
+	uint32_t jopid;
 
 	jthread_t wrthid;
 	jmx_t wrmx;

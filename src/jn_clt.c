@@ -16,7 +16,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #else
-#include "winsock.h"
+#include "winsock2.h"
 #define close(fd) close_socket(fd)
 #endif
 #include "sys/types.h"
@@ -29,8 +29,8 @@
 #include "errno.h"
 #ifdef linux
 #include "error.h"
-#endif
 #include "sys/wait.h"
+#endif
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
@@ -413,7 +413,7 @@ void *_jn_clt_callback_thread(void *args)
 						    (L"WARNING! NOT COMPLETE YET!")
 						    if (_create_thread
 							(&cbthid, NULL,
-							 progress_cb,
+							 (void*)progress_cb,
 							 (void *)q))
 							goto call_non_thread;
 

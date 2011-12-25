@@ -518,29 +518,65 @@ struct jdb_wr_fifo{
 	struct jdb_wr_fifo_entry* first, *last;
 };
 
+struct jdb_jrnl_fifo_entry{
+	/*
+	uchar cmd;
+	uint32_t nargs;
+	uint32_t* arg_size;
+	uchar* arg;
+	*/
+	size_t bufsize;
+	uchar* buf;
+	struct jdb_jrnl_fifo_entry* next;
+};
+
+struct jdb_jrnl_fifo{
+	uint32_t cnt;
+	struct jdb_jrnl_fifo_entry* first, *last;
+};
+
+
 /*
-	JOURNALLing commands
+	JOURNALLing
+		begin_record> REC_SIZE:OP_ID:EDIT_COMMAND:NARGS:ARG_SIZE_LIST:ARG_LIST
+		end_record> REC_SIZE:OP_ID:END_COMMAND
+		
+		*every begin_record MUST have a matching end_record to ensure
+		the operation has been finished successfully
+			
 */
 
 //open
-#define JDB_JRNL_OPEN			0x00
+#define JDB_CMD_OPEN			0x00
 
 //table
-#define JDB_JRNL_CREATE_TABLE		0x01
-#define JDB_JRNL_RM_TABLE		0x02
+#define JDB_CMD_CREATE_TABLE		0x01
+#define JDB_CMD_RM_TABLE		0x02
 
 //type
-#define JDB_JRNL_ADD_TYPEDEF		0x10
-#define JDB_JRNL_RM_TYPEDEF		0x11
-#define JDB_JRNL_ASSIGN_COLTYPE		0x12
+#define JDB_CMD_ADD_TYPEDEF		0x10
+#define JDB_CMD_RM_TYPEDEF		0x11
+#define JDB_CMD_ASSIGN_COLTYPE		0x12
 
 //cell
-#define JDB_JRNL_ADD_CELL		0x20
-#define JDB_JRNL_RM_CELL		0x21
-#define JDB_JRNL_MODIF_CELL		0x22
+#define JDB_CMD_ADD_CELL		0x20
+#define JDB_CMD_RM_CELL		0x21
+#define JDB_CMD_UPDATE_CELL		0x22
 
-//close
-#define JDB_JRNL_CLOSE			0xff
+//row/col ops
+#define JDB_CMD_RM_COL			0x30
+#define JDB_CMD_INSERT_COL		0x31
+#define JDB_CMD_RM_ROW			0x32
+#define JDB_CMD_INSERT_ROW		0x33
+#define JDB_CMD_SWAP_COL		0x34
+#define JDB_CMD_SWAP_ROW		0x35
+
+//endings
+#define JDB_CMD_CLOSE			0x40	//closing file
+#define JDB_CMD_END			0x41	//operation ends
+
+//exit
+#define JDB_CMD_EXIT			0xff
 
 /*
 	init / cleanup

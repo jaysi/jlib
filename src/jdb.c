@@ -130,7 +130,7 @@ int jdb_init(struct jdb_handle *h)
 	h->conf.filename = NULL;
 	h->conf.key = NULL;
 
-	h->jfd = -1;
+	h->jf =NULL;
 
 	h->fd = -1;
 
