@@ -245,7 +245,7 @@ int _jdb_create(struct jdb_handle *h)
 	int ret;
 	char filename[MAX_PATHNAME];
 
-	_wdeb_startup(L"called, filename: %S, flags: 0x%04x", h->conf.filename,
+	_wdeb_startup(L"called, filename: %ls, flags: 0x%04x", h->conf.filename,
 		      h->conf.flags);
 
 	wcstombs(filename, h->conf.filename, MAX_PATHNAME);
@@ -299,7 +299,7 @@ int _jdb_open(struct jdb_handle *h)
 	int ret;
 	char filename[MAX_PATHNAME];
 
-	_wdeb_startup(L"called, filename: %S, flags: 0x%04x", h->conf.filename,
+	_wdeb_startup(L"called, filename: %ls, flags: 0x%04x", h->conf.filename,
 		      h->conf.flags);
 
 	wcstombs(filename, h->conf.filename, MAX_PATHNAME);
@@ -410,14 +410,14 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 
 	_jdb_copy_conf_to_hdr(h);
 
-	_wdeb_startup(L"creating jdb < %S >", h->conf.filename);
+	_wdeb_startup(L"creating jdb < %ls >", h->conf.filename);
 	ret = _jdb_create(h);
 
 	_wdeb_startup(L"returned %i", ret);
 
 	if (ret == -JE_OPEN) {
 		_wdeb_startup(L"openning");
-		_wdeb_startup(L"openning jdb < %S >", h->conf.filename);
+		_wdeb_startup(L"openning jdb < %ls >", h->conf.filename);
 		ret = _jdb_open(h);
 	}
 	_wdeb_startup(L"returned %i, flags are 0x%04x", ret, h->hdr.flags);

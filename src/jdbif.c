@@ -21,7 +21,7 @@ void jdbif_set_prompt(wchar_t * str)
 
 void jdbif_prompt()
 {
-	wprintf(L"\n%S", prompt_str);
+	wprintf(L"\n%ls", prompt_str);
 }
 
 void jdbif_help()
@@ -50,7 +50,7 @@ int jdbif_stat(struct jdb_handle *h)
 	if (h->fd == -1) {
 		wprintf(L"No open files.\n");
 	} else {
-		wprintf(L"File < %S > is open.\n", h->conf.filename);
+		wprintf(L"File < %ls > is open.\n", h->conf.filename);
 		wprintf(L"File type: 0x%02x\n", h->hdr.type);
 		wprintf(L"File version: 0x%08x\n", h->hdr.ver);
 		wprintf(L"blocksize is < %u > bytes.\n", h->hdr.blocksize);
@@ -65,7 +65,7 @@ int jdbif_stat(struct jdb_handle *h)
 			h->hdr.typedef_bent);
 		wprintf
 		    (L"number of entries inside a column/row-typedef block is %u\n",
-		     h->hdr.tdef_bent);
+		     h->hdr.typedef_bent);
 		wprintf(L"number of entries inside a celldef block is %u\n",
 			h->hdr.celldef_bent);
 		wprintf(L"number of entries inside a index1 block is %u\n",
@@ -103,11 +103,11 @@ int jdbif_open(struct jdb_handle *h)
 	wchar_t flag_str[16];
 
 	wprintf(L"filename: ");
-	wscanf(L"%S", filename);
+	wscanf(L"%ls", filename);
 	wprintf(L"pass: ");
-	wscanf(L"%S", pass);
+	wscanf(L"%ls", pass);
 
-	wprintf(L"openning %S ...", filename);
+	wprintf(L"openning %ls ...", filename);
 	ret = jdb_open(h, filename, pass, JDB_DEF_FLAGS);
 	if (ret < 0) {
 		wprintf(L"\t[FAIL]\n");
@@ -127,9 +127,9 @@ int jdbif_open2(struct jdb_handle *h)
 	wchar_t flag_str[16];
 
 	wprintf(L"filename: ");
-	wscanf(L"%S", filename);
+	wscanf(L"%ls", filename);
 	wprintf(L"pass: ");
-	wscanf(L"%S", pass);
+	wscanf(L"%ls", pass);
 
 	if (!jdb_fstat(filename, pass, JDB_FSTAT_EXIST))
 		goto do_open;
@@ -146,7 +146,7 @@ int jdbif_open2(struct jdb_handle *h)
 	flags = 0;
 	wmemset(flag_str, L'\0', 16);
 	wprintf(L"flags bit string: ");
-	wscanf(L"%S", flag_str);
+	wscanf(L"%ls", flag_str);
 
 	for (ret = 0; ret < wcslen(flag_str); ret++)
 		if (flag_str[ret] == L'1')
@@ -180,7 +180,7 @@ int jdbif_open2(struct jdb_handle *h)
 	wcscpy(h->conf.key, pass);
 
  do_open:
-	wprintf(L"openning %S ...", filename);
+	wprintf(L"openning %ls ...", filename);
 	ret = jdb_open2(h, 0);
 	if (ret < 0) {
 		wprintf(L"\t[FAIL]\n");
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
 		/*
 		   jcstow((uchar*)argv[1], username, MAX_UNAME);
 		   jcstow((uchar*)argv[2], pass, MAX_PASS);
-		   wprintf(L"connecting localhost:49999 as %S...", username);
+		   wprintf(L"connecting localhost:49999 as %ls...", username);
 		   ret = jn_connect(&conn, "localhost", "49999", username, pass);
 		 */
 		if (ret < 0) {
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
  prompt1:
 	jdbif_set_prompt(L"Main >");
 	jdbif_prompt();
-	wscanf(L"%S", cmd);
+	wscanf(L"%ls", cmd);
 
 	switch (lookup_cmd(cmd)) {
 	case STAT:

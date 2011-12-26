@@ -12,9 +12,9 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=-DBUILDING_DLL=1_@@_
 CppCompiler=-DBUILDING_DLL=1_@@_
-Linker=--no-export-all-symbols --add-stdcall-alias_@@_C:/Dev-Cpp/lib/libpthreadGC2.a_@@_C:/Dev-Cpp/lib/libws2_32.a_@@_
+Linker=--export-all-symbols --add-stdcall-alias_@@_C:/Dev-Cpp/lib/libpthreadGC2.a_@@_C:/Dev-Cpp/lib/libws2_32.a_@@_
 IsCpp=0
-Icon=
+Icon=jlib.ico
 ExeOutput=
 ObjectOutput=
 OverrideOutput=0
@@ -243,7 +243,7 @@ BuildCmd=
 Major=0
 Minor=1
 Release=1
-Build=124
+Build=136
 LanguageID=1033
 CharsetID=1252
 CompanyName=

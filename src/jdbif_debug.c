@@ -74,13 +74,13 @@ void jdbif_dump_map_block(struct jdb_handle *h, jdb_bid_t bid)
 
 }
 
-void jdbif_dump_tdef_main_block(struct jdb_handle* h, jdb_bid_t bid){
+void jdbif_dump_table_def_block(struct jdb_handle* h, jdb_bid_t bid){
 	struct jdb_table table;
 	int ret;
-	table.tdef_main_bid = bid;
+	table.table_def_bid = bid;
 	
-	wprintf(L"reading tdef_main block...");
-	ret = _jdb_read_tdef_main_blk(h, &table);
+	wprintf(L"reading table_def block...");
+	ret = _jdb_read_table_def_blk(h, &table);
 	if (ret < 0) {
 		wprintf(L"\t[FAIL]\n");
 		jif_perr(ret);
@@ -90,8 +90,8 @@ void jdbif_dump_tdef_main_block(struct jdb_handle* h, jdb_bid_t bid){
 		wprintf(L"\t[DONE]\n");
 	
 	wprintf(L"Table Defintion Dump{\n");
-	jdbif_dump_tdef_main(&table.main);
-	_jdb_free_tdef_main(&table.main);
+	jdbif_dump_table_def(&table.main);
+	_jdb_free_table_def(&table.main);
 	wprintf(L"}Table Defintion Dump;\n");
 }
 
@@ -121,15 +121,15 @@ void jdbif_dump_typedef_block(struct jdb_handle* h, jdb_bid_t bid){
 	
 }
 
-void jdbif_dump_tdef_block(struct jdb_handle* h, jdb_bid_t bid){
-	struct jdb_tdef blk;
+void jdbif_dump_col_typedef_block(struct jdb_handle* h, jdb_bid_t bid){
+	struct jdb_col_typedef blk;
 	int ret;
 	
 	blk.bid = bid;
-	blk.entry = (struct jdb_tdef_blk_entry*)malloc(sizeof(struct jdb_tdef_blk_entry)*h->hdr.tdef_bent);
+	blk.entry = (struct jdb_col_typedef_blk_entry*)malloc(sizeof(struct jdb_col_typedef_blk_entry)*h->hdr.col_typedef_bent);
 	
 	wprintf(L"reading typedef block...");
-	ret = _jdb_read_tdef_blk(h, &blk);
+	ret = _jdb_read_col_typedef_blk(h, &blk);
 
 	if (ret < 0) {
 		wprintf(L"\t[FAIL]\n");
@@ -140,8 +140,8 @@ void jdbif_dump_tdef_block(struct jdb_handle* h, jdb_bid_t bid){
 		wprintf(L"\t[DONE]\n");
 	
 	wprintf(L"Column-Type Dump{\n");
-	jdbif_dump_tdef_hdr(h, blk.hdr);
-	jdbif_dump_tdef_entries(h, &blk);
+	jdbif_dump_col_typedef_hdr(h, blk.hdr);
+	jdbif_dump_col_typedef_entries(h, &blk);
 	if(blk.entry) free(blk.entry);	
 	wprintf(L"}Column-Type Dump;\n");
 	
@@ -187,12 +187,12 @@ void jdbif_dump_block(struct jdb_handle *h)
 		//wprintf(L"Not Implemented!\n");
 		jdbif_dump_typedef_block(h, bid);
 		break;
-	case JDB_BTYPE_TDEF:
+	case JDB_BTYPE_COL_TYPEDEF:
 		//wprintf(L"Not Implemented!\n");
-		jdbif_dump_tdef_block(h, bid);
+		jdbif_dump_col_typedef_block(h, bid);
 		break;
-	case JDB_BTYPE_TDEF_MAIN:
-		jdbif_dump_tdef_main_block(h, bid);
+	case JDB_BTYPE_TABLE_DEF:
+		jdbif_dump_table_def_block(h, bid);
 		break;
 	case JDB_BTYPE_CELLDEF:
 		wprintf(L"Not Implemented!\n");
@@ -229,12 +229,13 @@ void jdbif_taddz(struct jdb_handle* h){
 	wscanf(L"%u", &n);
 	
 	for(i = 1; i <= n; i++){
-		swprintf(name, 100, L"ta%u", i);		
-		ret = jdb_create_table(h, name, 10, 10, 0, 0);
+		//swprintf(name, 100, L"ta%u", i);
+		//ret = jdb_create_table(h, name, 10, 10, 0, 0);
+		ret = -JE_IMPLEMENT;
 		if(ret < 0){
-			wprintf(L"[%S, %i] ", name, ret);
+			wprintf(L"[%ls, %i] ", name, ret);
 		} else {
-			wprintf(L"%S ", name);
+			wprintf(L"%ls ", name);
 		}
 		if(i%5) wprintf(L"\n");
 	}	
@@ -255,9 +256,9 @@ void jdbif_type_addz(struct jdb_handle* h){
 						JDB_TYPE_RAW, i, 
 						i%2==0?0:JDB_TYPEDEF_VDATA);
 			if(ret < 0){
-				wprintf(L"[I%i:L%i:F%x]@%S, R%i ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name, ret);
+				wprintf(L"[I%i:L%i:F%x]@%ls, R%i ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name, ret);
 			} else {
-				wprintf(L"I%i:L%i:F%x@%S ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name);
+				wprintf(L"I%i:L%i:F%x@%ls ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name);
 			}
 			if(i%3) wprintf(L"\n");
 		}
@@ -275,13 +276,16 @@ void jdbif_tc_addz(struct jdb_handle* h){
 	
 	for(table = h->table_list.first; table; table = table->next){
 		for(i = 1; i <= n; i++){
+			/*
 			ret = jdb_assign_col_type(h, table->main.name, typeid,
 						JDB_TYPE_RAW, i, 
 						i%2==0?0:JDB_TYPEDEF_VDATA);
+			*/
+			ret = -JE_IMPLEMENT;
 			if(ret < 0){
-				wprintf(L"[I%i:L%i:F%x]@%S, R%i ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name, ret);
+				wprintf(L"[I%i:L%i:F%x]@%ls, R%i ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name, ret);
 			} else {
-				wprintf(L"I%i:L%i:F%x@%S ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name);
+				wprintf(L"I%i:L%i:F%x@%ls ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name);
 			}
 			if(i%3) wprintf(L"\n");
 		}
@@ -313,7 +317,7 @@ int jdbif_debug(struct jdb_handle *h)
  prompt1:
 	jdbif_set_prompt(L"Debug >");
 	jdbif_prompt();
-	wscanf(L"%S", cmd);
+	wscanf(L"%ls", cmd);
 
 	switch (lookup_cmd(cmd)) {
 	case HELP:

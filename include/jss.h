@@ -1,7 +1,7 @@
 #ifndef _JSS_H
 #define _JSS_H
 
-//j's stream store library
+//j's stream(simple) store library
 
 #include "jtypes.h"
 #include "aes.h"
@@ -39,6 +39,7 @@
 #define JSS_BE		(0x01<<0)	//big endian host
 #define JSS_CRYPT	(0x01<<1)
 #define JSS_CRC		(0x01<<2)
+#define JSS_COMP	(0x01<<3)	//compressed
 
 struct jss_file_hdr {
 

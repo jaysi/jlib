@@ -238,6 +238,19 @@ void stat_jss(struct jss_handle *h)
 		wprintf(L"Little Endian.\n");
 	}
 
+	if (h->hdr.flags & JSS_COMP) {
+		wprintf(L"Compressed.\n");
+	} else {
+		wprintf(L"Not Compressed.\n");
+	}
+
+	if (h->hdr.flags & JSS_CRYPT) {
+		wprintf(L"Encrypted.\n");
+	} else {
+		wprintf(L"Not Encrypted.\n");
+	}
+
+
 	wprintf(L"number of records: %u\n", h->hdr.nrec);
 
 }

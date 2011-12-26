@@ -73,7 +73,7 @@ void jdbif_table_type_add_typedef(struct jdb_handle* h){
 	uint32_t len;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	wprintf(L"Type Id(%i ~ 255): ", JDB_TYPE_NULL+0x01);
 	wscanf(L"%i", &ret);
 	type_id = (uchar)ret;
@@ -88,7 +88,7 @@ void jdbif_table_type_add_typedef(struct jdb_handle* h){
 	flags = 0;
 	wmemset(flag_str, L'\0', 10);
 	wprintf(L"flags bit string: ");
-	wscanf(L"%S", flag_str);
+	wscanf(L"%ls", flag_str);
 
 	for (ret = 0; ret < wcslen(flag_str); ret++)
 		if (flag_str[ret] == L'1')
@@ -128,7 +128,7 @@ void jdbif_table_type_list_typedefs(struct jdb_handle* h){
 	struct jdb_typedef_blk* blk;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	wprintf(L"searching table...");
 	ret = _jdb_table_handle(h, name, &table);
 	if (ret < 0) {
@@ -155,7 +155,7 @@ void jdbif_table_type_rm_typedef(struct jdb_handle* h){
 	uchar type_id;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	wprintf(L"Type Id(%i ~ 255): ", JDB_TYPE_NULL+1);
 	wscanf(L"%i", &ret);
 	type_id = (uchar)ret;
@@ -180,7 +180,7 @@ void jdbif_table_type_assign_col_type(struct jdb_handle* h){
 	uint32_t col;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	wprintf(L"Type Id(%i ~ 255): ", JDB_TYPE_NULL+1);
 	wscanf(L"%i", &ret);
 	type_id = (uchar)ret;
@@ -207,7 +207,7 @@ void jdbif_table_type_find_col_type(struct jdb_handle* h){
 	uint32_t col;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	wprintf(L"Column: ");
 	wscanf(L"%u", &col);	
 
@@ -224,7 +224,7 @@ void jdbif_table_type_rm_col_type(struct jdb_handle* h){
 	uint32_t col;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	wprintf(L"Column: ");
 	wscanf(L"%u", &col);
 		
@@ -255,7 +255,7 @@ int jdbif_table_type(struct jdb_handle *h)
  prompt1:
 	jdbif_set_prompt(L"Type >");
 	jdbif_prompt();
-	wscanf(L"%S", cmd);
+	wscanf(L"%ls", cmd);
 
 	switch (lookup_cmd(cmd)) {
 	case HELP:

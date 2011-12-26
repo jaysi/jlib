@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "j_if.h"
 #include "jconst.h"
+#include "jtime.h"
 
 #define VER	"0.0.1"
 #define PROMPT_LEN	20
@@ -80,7 +81,7 @@ void jdbif_add_cell(struct jdb_handle* h){
 	uchar filename[100];
 
 	wprintf(L"table name: ");
-	wscanf(L"%S", table_name);
+	wscanf(L"%ls", table_name);
 	wprintf(L"col: ");
 	wscanf(L"%u", &col);
 	wprintf(L"row: ");
@@ -89,7 +90,7 @@ void jdbif_add_cell(struct jdb_handle* h){
 	wscanf(L"%u", &datalen);
 	if(!datalen){
 		wprintf(L"load from file (y/n)?");
-		wscanf(L"%S", yn);
+		wscanf(L"%ls", yn);
 		if(yn[0] == L'y'){
 			
 			if((ret = jif_read_file(filename, &data, &datalen)) < 0){
@@ -104,7 +105,7 @@ void jdbif_add_cell(struct jdb_handle* h){
 			return;
 		}
 		wprintf(L"data: ");
-		wscanf(L"%S", data);
+		wscanf(L"%ls", data);
 	}
 	wprintf(L"data_type: ");
 	wscanf(L"%i", &ret);
@@ -131,7 +132,7 @@ void jdbif_rm_cell(struct jdb_handle* h){
 	int ret;
 	
 	wprintf(L"table name: ");
-	wscanf(L"%S", table_name);
+	wscanf(L"%ls", table_name);
 	wprintf(L"col: ");
 	wscanf(L"%u", &col);
 	wprintf(L"row: ");
@@ -160,7 +161,7 @@ void jdbif_find_cell(struct jdb_handle* h){
 	wchar_t yn[2];
 	
 	wprintf(L"table name: ");
-	wscanf(L"%S", table_name);
+	wscanf(L"%ls", table_name);
 	wprintf(L"col: ");
 	wscanf(L"%u", &col);
 	wprintf(L"row: ");
@@ -168,7 +169,8 @@ void jdbif_find_cell(struct jdb_handle* h){
 	
 	wprintf(L"loading cell...");
 	
-	ret = jdb_find_cell(h, table_name, col, row, &data, &datalen, &data_type, &unsign);
+	//ret = jdb_find_cell(h, table_name, col, row, &data, &datalen, &data_type, &unsign);
+	ret = -JE_IMPLEMENT;
 	
 	if(ret < 0){
 		wprintf(L"[FAIL]\n");
@@ -177,10 +179,10 @@ void jdbif_find_cell(struct jdb_handle* h){
 	}
 	wprintf(L"[DONE]\n");
 
-	wprintf(L"datalen: %u, datatype: 0x%02x, %S\n", datalen, data_type, unsign?L"UNSIGNED":L"SIGNED");
+	wprintf(L"datalen: %u, datatype: 0x%02x, %ls\n", datalen, data_type, unsign?L"UNSIGNED":L"SIGNED");
 
 	wprintf(L"print data(y/n)?");
-	wscanf(L"%S", yn);
+	wscanf(L"%ls", yn);
 	if(yn[0] == L'y'){
 		wprintf(L"-=BEGIN=-\n%s\n-=END=-", data);
 	}
@@ -192,7 +194,7 @@ void jdbif_list_cell(struct jdb_handle* h){
 	uint32_t col, row, *li_col, *li_row, n, i;
 
 	wprintf(L"table name: ");
-	wscanf(L"%S", table_name);
+	wscanf(L"%ls", table_name);
 	wprintf(L"col(Enter %u for all matches): ", JDB_ID_INVAL);
 	wscanf(L"%u", &col);
 	wprintf(L"row(Enter %u for all matches): ", JDB_ID_INVAL);
@@ -208,7 +210,7 @@ void jdbif_list_cell(struct jdb_handle* h){
 	wprintf(L"[DONE]\n");
 	wprintf(L"found %u matches, print in [col, row] order.\n", n);
 	for(i = 0; i <= n; i++){
-		wprintf(L"[%u, %u]", (*li_col)[i], (*li_row)[i]);
+		wprintf(L"[%u, %u]", li_col[i], li_row[i]);
 		if(i && !(i%4)) wprintf(L"\n");
 		else wprintf(L"\t");
 	}

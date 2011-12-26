@@ -491,10 +491,11 @@ _jdb_rm_celldef(struct jdb_handle *h, struct jdb_table *table,
 
 }
 
-int jdb_add_cell(struct jdb_handle *h,
+int jdb_create_cell(struct jdb_handle *h,
 	     wchar_t* table_name,
+	     uint32_t col, uint32_t row,
 	     uchar * data, uint32_t datalen,
-	     jdb_data_t dtype, uint32_t row, uint32_t col)
+	     jdb_data_t dtype,  int unsign)
 {
 
 	int ret;

@@ -42,7 +42,7 @@ void jdbif_list_tables(struct jdb_handle *h)
 	wprintf(L"Table List{\n");
 	ret = 0;
 	for (entry = list; entry; entry = entry->next) {
-		wprintf(L"\t%S\n", entry->wcs);
+		wprintf(L"\t%ls\n", entry->wcs);
 		ret++;
 	}
 	wprintf(L"}Table List ( %i tables );\n", ret);
@@ -54,7 +54,7 @@ void jdbif_llist_tables(struct jdb_handle *h)
 	struct jdb_table *table;
 	wprintf(L"Loaded Table List{\n");
 	for (table = h->table_list.first; table; table = table->next) {
-		wprintf(L"\t%S\n", table->main.name);
+		wprintf(L"\t%ls\n", table->main.name);
 	}
 	wprintf(L"}Loaded Table List;\n");
 }
@@ -62,7 +62,7 @@ void jdbif_llist_tables(struct jdb_handle *h)
 void jdbif_dump_table_def(struct jdb_table_def_blk *table_def)
 {
 
-	wprintf(L"\tName: %S\n", table_def->name);
+	wprintf(L"\tName: %ls\n", table_def->name);
 	wprintf(L"\tTID: %u\n", table_def->hdr.tid);
 	wprintf(L"\tnamelen (in jcs): %u\n", table_def->hdr.namelen);
 	wprintf(L"\trows: %u, columns: %u\n", table_def->hdr.nrows,
@@ -79,7 +79,7 @@ void jdbif_stat_table(struct jdb_handle *h)
 	struct jdb_table *table;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	
 	wprintf(L"Searching for table...");
 	
@@ -108,7 +108,7 @@ void jdbif_add_table(struct jdb_handle* h){
 	uint32_t rows, cols;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 	wprintf(L"rows: ");
 	wscanf(L"%u",&rows);
 	wprintf(L"cols: ");
@@ -134,7 +134,7 @@ void jdbif_close_table(struct jdb_handle* h){
 	uint32_t rows, cols;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 
 	wprintf(L"closing table...");
 	ret = jdb_close_table(h, name);
@@ -158,7 +158,7 @@ void jdbif_open_table(struct jdb_handle* h){
 	uchar flags;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 
 	wprintf(L"flags are: \n");
 	wprintf(L"\tBIT0: bind columns\n");
@@ -170,7 +170,7 @@ void jdbif_open_table(struct jdb_handle* h){
 	flags = 0;
 	wmemset(flag_str, L'\0', 9);
 	wprintf(L"flags bit string: ");
-	wscanf(L"%S", flag_str);
+	wscanf(L"%ls", flag_str);
 
 	for (ret = 0; ret < wcslen(flag_str); ret++)
 		if (flag_str[ret] == L'1')
@@ -205,7 +205,7 @@ void jdbif_sync_table(struct jdb_handle* h){
 	uint32_t rows, cols;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 
 	wprintf(L"syncing table...");
 	ret = jdb_sync_table(h, name);
@@ -227,7 +227,7 @@ void jdbif_find_table(struct jdb_handle* h){
 	uint32_t rows, cols;
 
 	wprintf(L"Table name: ");
-	wscanf(L"%S", name);
+	wscanf(L"%ls", name);
 
 	wprintf(L"searching for table...");
 	ret = jdb_find_table(h, name);
@@ -256,7 +256,7 @@ int jdbif_table(struct jdb_handle *h)
  prompt1:
 	jdbif_set_prompt(L"Table >");
 	jdbif_prompt();
-	wscanf(L"%S", cmd);
+	wscanf(L"%ls", cmd);
 
 	switch (lookup_cmd(cmd)) {
 	case HELP:

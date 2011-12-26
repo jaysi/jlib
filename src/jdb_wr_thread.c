@@ -1,5 +1,7 @@
 #include "jdb.h"
 
+#define _wdeb_start	_wdeb
+
 void* _jdb_write_thread(void* arg){
 	struct jdb_handle* h = (struct jdb_handle*)arg;
 	int oldcancelstate;
@@ -7,6 +9,8 @@ void* _jdb_write_thread(void* arg){
 	jdb_bid_t i, pos;
 	
 	//EXIT: if !bufsize
+	
+	_wdeb_start(L"thread started");
 	
 	while(1){
 		_wait_sem(&h->wrsem);
@@ -69,6 +73,8 @@ int _jdb_init_wr_thread(struct jdb_handle* h){
 	_init_mx(&h->rdmx, NULL);
 #endif
 
+	_wdeb_start(L"initing thread...");
+
 	_init_sem(&h->wrsem);
 	
 	pthread_attr_init(&tattr);
@@ -76,12 +82,16 @@ int _jdb_init_wr_thread(struct jdb_handle* h){
 
 	h->wr_fifo.first = NULL;
 
+	_wdeb_start(L"starting thread...");
+
 	if (_create_thread(&(h->wrthid), &tattr, _jdb_write_thread, (void *)h)
 	    < 0) {
 		ret = -JE_THREAD;		
 	}
 
 	pthread_attr_destroy(&tattr);
+
+	_wdeb_start(L"returning %i", ret);
 
 	return ret;
 		
