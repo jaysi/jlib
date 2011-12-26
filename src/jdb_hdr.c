@@ -1,4 +1,7 @@
 #include "jdb.h"
+
+#define _wdeb_wr	_wdeb
+
 /*
 void _jdb_lock_hdr(struct jdb_handle* h){
 
@@ -60,6 +63,8 @@ int _jdb_write_hdr(struct jdb_handle *h)
 {
 	uchar buf[JDB_HDR_SIZE];
 	int ret;
+
+	_wdeb_wr(L"writing header...");
 
 	_jdb_lock_handle(h);
 

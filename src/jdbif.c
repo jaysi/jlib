@@ -32,6 +32,7 @@ void jdbif_help()
 	wprintf(L"\tOPEN2\tOpen/Create database, provides detailed settings\n");	
 	wprintf(L"\tTABLE\tTable sub-system\n");
 	wprintf(L"\tDEBUG\tDebug sub-system\n");
+	wprintf(L"\tSYNC\tSynchronizing database\n");
 	wprintf(L"\tCLOSE\tClose database\n");
 	wprintf(L"\tEXIT\tExit interface\n");
 }
@@ -250,6 +251,9 @@ int main(int argc, char *argv[])
 		break;
 	case DEBUG:
 		jdbif_debug(&h);
+		break;
+	case SYNC:
+		jdb_sync(&h);
 		break;
 	case CLOSE:
 		jdb_close(&h);

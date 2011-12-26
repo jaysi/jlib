@@ -1,6 +1,8 @@
 #include "jdb.h"
 
 #define _wdeb_start	_wdeb
+#define _wdeb_end	_wdeb
+#define _wdeb_wr	_wdeb
 
 void* _jdb_write_thread(void* arg){
 	struct jdb_handle* h = (struct jdb_handle*)arg;
@@ -50,6 +52,8 @@ void* _jdb_write_thread(void* arg){
 		
 	}
 	
+	_wdeb_end(L"exiting thread...");
+	
 	return NULL;	
 }
 
@@ -84,6 +88,8 @@ int _jdb_init_wr_thread(struct jdb_handle* h){
 
 	_wdeb_start(L"starting thread...");
 
+	ret = 0;
+
 	if (_create_thread(&(h->wrthid), &tattr, _jdb_write_thread, (void *)h)
 	    < 0) {
 		ret = -JE_THREAD;		
@@ -99,6 +105,8 @@ int _jdb_init_wr_thread(struct jdb_handle* h){
 
 int _jdb_request_wr_thread_exit(struct jdb_handle* h){
 	struct jdb_wr_fifo_entry* entry;
+
+	_wdeb_end(L"requesting write thread exit...");
 
 	entry = (struct jdb_wr_fifo_entry*)malloc(sizeof(struct jdb_wr_fifo_entry));
 	if(!entry) return -JE_MALOC;	
@@ -137,7 +145,9 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	struct jdb_fav_blk* fav_blk;
 	struct jdb_map* map;
 	
-	int ret = 0, ret2;	
+	int ret = 0, ret2;
+	
+	_wdeb_wr(L"requesting write table write...");	
 
 	entry = (struct jdb_wr_fifo_entry*)malloc(sizeof(struct jdb_wr_fifo_entry));
 	if(!entry) return -JE_MALOC;

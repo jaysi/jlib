@@ -3,6 +3,8 @@
 #define _wdeb_table(f, a...)
 #define _wdeb_load _wdeb
 #define _wdeb_data_ptr	_wdeb
+#define _wdeb_wr _wdeb
+
 #define _jdb_get_tid(wname) _jdb_hash((uchar*)wname, WBYTES(wname))
 
 int jdb_find_table(struct jdb_handle *h, wchar_t * name)
@@ -485,6 +487,8 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 	struct jdb_typedef_blk* typedef_blk;
 	struct jdb_fav_blk* fav_blk;
 	int ret = 0, ret2;
+	
+	_wdeb_wr(L"writing data blocks...");
 		
 	for(data_blk = table->data_list.first; data_blk; data_blk = data_blk->next){
 		if(data_blk->write){
@@ -492,6 +496,8 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 			if(!ret && ret2) ret = ret2;
 		}
 	}
+	
+	_wdeb_wr(L"ret = %i, writing data pointers...", ret);
 
 	for(data_ptr_blk = table->data_ptr_list.first; data_ptr_blk; data_ptr_blk = data_ptr_blk->next){
 		if(data_ptr_blk->write){
@@ -500,12 +506,16 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 		}
 	}	
 	
+	_wdeb_wr(L"ret = %i, writing celldef blocks...", ret);
+	
 	for(celldef_blk = table->celldef_list.first; celldef_blk; celldef_blk = celldef_blk->next){
 		if(celldef_blk->write){
 			ret2 = _jdb_write_celldef_blk(h, celldef_blk);
 			if(!ret && ret2) ret = ret2;
 		}
 	}
+	
+	_wdeb_wr(L"ret = %i, writing column type definitions...", ret);
 	
 	for(col_typedef_blk = table->col_typedef_list.first; col_typedef_blk; col_typedef_blk = col_typedef_blk->next){
 		if(col_typedef_blk->write){
@@ -514,6 +524,8 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 		}
 	}
 
+	_wdeb_wr(L"ret = %i, writing type definition blocks...", ret);
+
 	for(typedef_blk = table->typedef_list.first; typedef_blk; typedef_blk = typedef_blk->next){
 		if(typedef_blk->write){
 			ret2 = _jdb_write_typedef_blk(h, typedef_blk);
@@ -521,17 +533,23 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 		}
 	}
 
+	_wdeb_wr(L"ret = %i, writing fav blocks...", ret);
+
 	for(fav_blk = table->fav_list.first; fav_blk; fav_blk = fav_blk->next){
 		if(fav_blk->write){
 			ret2 = _jdb_write_fav_blk(h, fav_blk);
 			if(!ret && ret2) ret = ret2;
 		}
-	}	
+	}
+	
+	_wdeb_wr(L"ret = %i, writing table definition blocks...", ret);	
 	
 	if(table->main.write){
 		ret2 = _jdb_write_table_def_blk(h, table);
 		if(!ret && ret2) ret = ret2;
 	}
+	
+	_wdeb_wr(L"ret = %i", ret);
 	
 	return ret;
 }

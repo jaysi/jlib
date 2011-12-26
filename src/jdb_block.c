@@ -1,6 +1,6 @@
 #include "jdb.h"
 
-#define _wdeb_io(f, a...)
+#define _wdeb_io _wdeb
 #define _wdeb_crc _wdeb
 #define _wdeb_map(f, a...)
 

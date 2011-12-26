@@ -21,7 +21,7 @@ void jif_perr(int err)
 {
 	unsigned char estr[MAX_ERR_STR];
 	jer_lookup_str(err, estr);
-	wprintf(L"\t\tError: %i, %s\n", err, estr);
+	printf("\t\tError: %i, %s\n", err, estr);
 	perror("\t\tSYS: ");
 }
 

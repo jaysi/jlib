@@ -236,6 +236,8 @@ int jdb_fstat(wchar_t * wfilename, wchar_t * key, uint16_t mode)
 		if (access(filename, F_OK))
 			return -JE_FAIL;
 	}
+	
+	_wdeb(L"WARNING: NOT COMPLETED YET!");
 
 	return 0;
 }
@@ -472,6 +474,9 @@ int jdb_close(struct jdb_handle *h)
 		return -JE_NOINIT;
 	if (h->fd == -1)
 		return -JE_NOOPEN;
+		
+	if((ret = jdb_sync(h)) < 0)
+		return ret;		
 	
 	if(h->hdr.flags & JDB_O_WR_THREAD){
 	
@@ -484,9 +489,6 @@ int jdb_close(struct jdb_handle *h)
 	
 	}
 	
-	if((ret = jdb_sync(h)) < 0)
-		return ret;
-
 	h->fd = -1;
 	h->magic = 0x0000;
 
