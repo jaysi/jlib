@@ -108,7 +108,7 @@ int _jdb_request_wr_thread_exit(struct jdb_handle* h){
 		h->wr_fifo.cnt++;
 	}
 	
-	_sem_post(&h->wrsem);
+	_post_sem(&h->wrsem);
 	_unlock_mx(&h->wrmx);
 	
 	return 0;
@@ -253,7 +253,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		h->wr_fifo.cnt++;
 	}
 	
-	_sem_post(&h->wrsem);
+	_post_sem(&h->wrsem);
 	_unlock_mx(&h->wrmx);
 	
 	return 0;

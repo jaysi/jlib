@@ -6,6 +6,7 @@
 #include "jtypes.h"
 #include "jtable.h"
 #include "jcs.h"
+#include "debug.h"
 #ifndef JDB_SINGLE_THREAD
 #define _J_USE_PTHREAD
 #include "jcompat.h"
@@ -145,6 +146,8 @@ struct jdb_handle {
 	jmx_t jmx;
 	jsem_t jsem;
 	uint32_t jopid;
+	
+	struct jdb_jrnl_fifo jrnl_fifo;
 
 	jthread_t wrthid;
 	jmx_t wrmx;
@@ -289,8 +292,8 @@ extern "C" {
 				uchar not, uint32_t col,
 				uchar logic, uchar match, jdb_data_t data_type,
 				uint32_t str_len, uchar* str);
-	int jdb_list(		struct jdb_handle* h, struct jdb_table* table,
- 	    			struct jdb_filter* filter);
+	int jdb_list(	struct jdb_handle* h, struct jdb_table* table,
+ 	    		struct jdb_filter* filter, struct jdb_rowset* rowset);
 	
 #ifdef __cplusplus
 }

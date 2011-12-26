@@ -15,6 +15,7 @@
 #include "netinet/in.h"
 #else
 #include "winsock2.h"
+#include <ws2tcpip.h>
 #define close(fd) close_socket(fd)
 #endif
 #include "sys/types.h"
@@ -47,9 +48,7 @@ void *get_in_addr(struct sockaddr *sa)
 		return &(((struct sockaddr_in *)sa)->sin_addr);
 	}
 
-#ifndef _WIN32
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
-#endif	
 
 }
 

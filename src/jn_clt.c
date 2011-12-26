@@ -17,6 +17,7 @@
 #include <netdb.h>
 #else
 #include "winsock2.h"
+#include <ws2tcpip.h>
 #define close(fd) close_socket(fd)
 #endif
 #include "sys/types.h"
@@ -569,7 +570,9 @@ void _jn_clt_sigchld_handler(int s)
 int jn_init_clt(jn_h * h, jn_conn * conn)
 {
 	int ret = 0;
+#ifndef _WIN32	
 	struct sigaction sa;
+#endif	
 
 	if (h->magic == JN_MAGIC)
 		return -JE_ALREADYINIT;
@@ -580,13 +583,14 @@ int jn_init_clt(jn_h * h, jn_conn * conn)
 
 	jn_default_conf(&h->conf);
 
+#ifndef _WIN32
 	sa.sa_handler = _jn_clt_sigchld_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		return -1;
 	}
-
+#endif
 	h->magic = JN_MAGIC;
 
 	return ret;

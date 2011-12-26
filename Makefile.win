@@ -5,9 +5,9 @@ CPP  = g++.exe -D__DEBUG__
 CC   = gcc.exe -D__DEBUG__
 WINDRES = windres.exe
 RES  = jlib_private.res
-OBJ  = src/dllmain.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_wr_thread.o src/jn.o src/jn_assm.o src/jn_base.o src/jn_block.o src/jn_clt.o src/jn_clt_com.o src/jn_clt_s.o src/jn_conn.o src/jn_fifo.o src/jn_pkt_gen.o src/jn_svr.o src/jn_svr_com.o src/jn_svr_login.o src/jn_svr_mod.o src/jn_svr_poll.o src/jn_svr_send.o src/jss.o src/hardio.o src/jcs.o src/aes.o src/crc.o src/des.o src/ecc.o src/jhash.o src/jrand.o src/rc4.o src/sha256.o src/debug.o src/jer.o src/jtable.o src/jpack.o $(RES)
-LINKOBJ  = src/dllmain.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_wr_thread.o src/jn.o src/jn_assm.o src/jn_base.o src/jn_block.o src/jn_clt.o src/jn_clt_com.o src/jn_clt_s.o src/jn_conn.o src/jn_fifo.o src/jn_pkt_gen.o src/jn_svr.o src/jn_svr_com.o src/jn_svr_login.o src/jn_svr_mod.o src/jn_svr_poll.o src/jn_svr_send.o src/jss.o src/hardio.o src/jcs.o src/aes.o src/crc.o src/des.o src/ecc.o src/jhash.o src/jrand.o src/rc4.o src/sha256.o src/debug.o src/jer.o src/jtable.o src/jpack.o $(RES)
-LIBS =  -L"C:/Dev-Cpp/lib" --no-export-all-symbols --add-stdcall-alias C:/Dev-Cpp/lib/libpthreadGC2.a  -g3 
+OBJ  = src/dllmain.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_wr_thread.o src/jss.o src/hardio.o src/jcs.o src/aes.o src/crc.o src/des.o src/ecc.o src/jhash.o src/jrand.o src/rc4.o src/sha256.o src/debug.o src/jer.o src/jtable.o src/jpack.o src/jdb_undo.o src/memmem.o $(RES)
+LINKOBJ  = src/dllmain.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_wr_thread.o src/jss.o src/hardio.o src/jcs.o src/aes.o src/crc.o src/des.o src/ecc.o src/jhash.o src/jrand.o src/rc4.o src/sha256.o src/debug.o src/jer.o src/jtable.o src/jpack.o src/jdb_undo.o src/memmem.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib" --no-export-all-symbols --add-stdcall-alias C:/Dev-Cpp/lib/libpthreadGC2.a C:/Dev-Cpp/lib/libws2_32.a  -g3 
 INCS =  -I"C:/Dev-Cpp/include"  -I"J:/comp/dev/src/jlib/include" 
 CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"J:/comp/dev/src/jlib/include" 
 BIN  = jlib.dll
@@ -90,54 +90,6 @@ src/jdb_type.o: src/jdb_type.c
 src/jdb_wr_thread.o: src/jdb_wr_thread.c
 	$(CC) -c src/jdb_wr_thread.c -o src/jdb_wr_thread.o $(CFLAGS)
 
-src/jn.o: src/jn.c
-	$(CC) -c src/jn.c -o src/jn.o $(CFLAGS)
-
-src/jn_assm.o: src/jn_assm.c
-	$(CC) -c src/jn_assm.c -o src/jn_assm.o $(CFLAGS)
-
-src/jn_base.o: src/jn_base.c
-	$(CC) -c src/jn_base.c -o src/jn_base.o $(CFLAGS)
-
-src/jn_block.o: src/jn_block.c
-	$(CC) -c src/jn_block.c -o src/jn_block.o $(CFLAGS)
-
-src/jn_clt.o: src/jn_clt.c
-	$(CC) -c src/jn_clt.c -o src/jn_clt.o $(CFLAGS)
-
-src/jn_clt_com.o: src/jn_clt_com.c
-	$(CC) -c src/jn_clt_com.c -o src/jn_clt_com.o $(CFLAGS)
-
-src/jn_clt_s.o: src/jn_clt_s.c
-	$(CC) -c src/jn_clt_s.c -o src/jn_clt_s.o $(CFLAGS)
-
-src/jn_conn.o: src/jn_conn.c
-	$(CC) -c src/jn_conn.c -o src/jn_conn.o $(CFLAGS)
-
-src/jn_fifo.o: src/jn_fifo.c
-	$(CC) -c src/jn_fifo.c -o src/jn_fifo.o $(CFLAGS)
-
-src/jn_pkt_gen.o: src/jn_pkt_gen.c
-	$(CC) -c src/jn_pkt_gen.c -o src/jn_pkt_gen.o $(CFLAGS)
-
-src/jn_svr.o: src/jn_svr.c
-	$(CC) -c src/jn_svr.c -o src/jn_svr.o $(CFLAGS)
-
-src/jn_svr_com.o: src/jn_svr_com.c
-	$(CC) -c src/jn_svr_com.c -o src/jn_svr_com.o $(CFLAGS)
-
-src/jn_svr_login.o: src/jn_svr_login.c
-	$(CC) -c src/jn_svr_login.c -o src/jn_svr_login.o $(CFLAGS)
-
-src/jn_svr_mod.o: src/jn_svr_mod.c
-	$(CC) -c src/jn_svr_mod.c -o src/jn_svr_mod.o $(CFLAGS)
-
-src/jn_svr_poll.o: src/jn_svr_poll.c
-	$(CC) -c src/jn_svr_poll.c -o src/jn_svr_poll.o $(CFLAGS)
-
-src/jn_svr_send.o: src/jn_svr_send.c
-	$(CC) -c src/jn_svr_send.c -o src/jn_svr_send.o $(CFLAGS)
-
 src/jss.o: src/jss.c
 	$(CC) -c src/jss.c -o src/jss.o $(CFLAGS)
 
@@ -182,6 +134,12 @@ src/jtable.o: src/jtable.c
 
 src/jpack.o: src/jpack.c
 	$(CC) -c src/jpack.c -o src/jpack.o $(CFLAGS)
+
+src/jdb_undo.o: src/jdb_undo.c
+	$(CC) -c src/jdb_undo.c -o src/jdb_undo.o $(CFLAGS)
+
+src/memmem.o: src/memmem.c
+	$(CC) -c src/memmem.c -o src/memmem.o $(CFLAGS)
 
 jlib_private.res: jlib_private.rc 
 	$(WINDRES) -i jlib_private.rc --input-format=rc -o jlib_private.res -O coff 

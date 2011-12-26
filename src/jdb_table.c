@@ -2,6 +2,7 @@
 #define _wdeb_table_def(f, a...)
 #define _wdeb_table(f, a...)
 #define _wdeb_load _wdeb
+#define _wdeb_data_ptr	_wdeb
 #define _jdb_get_tid(wname) _jdb_hash((uchar*)wname, WBYTES(wname))
 
 int jdb_find_table(struct jdb_handle *h, wchar_t * name)
@@ -85,9 +86,18 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 		free(table);
 
-		return -JE_UNK;
+		return -JE_LIMIT;
 
 	}
+	
+	_jdb_lock_handle(h);
+
+	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
+
+	h->hdr.nblocks++;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);		
 
 	memset(&table->main.hdr, '\0', sizeof(struct jdb_table_def_blk_hdr));	
 	
@@ -96,7 +106,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	table->nwrblk = 0UL;
 	table->map_chg_list_size = 0UL;
 	table->map_chg_list = NULL;
-	
+		
 	table->main.hdr.type = JDB_BTYPE_TABLE_DEF;
 
 	table->main.hdr.tid = tid;
@@ -168,8 +178,6 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	h->hdr.nblocks++;
 	h->hdr.ntables++;
-
-	_jdb_set_hdr_flag(h, JDB_HMODIF);
 
 	return 0;
 
@@ -528,7 +536,7 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 	return ret;
 }
 
-int jdb_sync(struct jdb_handle* h){
+int jdb_sync_tables(struct jdb_handle* h){
 	struct jdb_table* table;
 	int ret = 0, ret2;
 	for(table = h->table_list.first; table; table = table->next){		

@@ -1,6 +1,7 @@
 #include "jdb.h"
 
 #define _wdeb_alloc _wdeb
+#define _wdeb_data_ptr	_wdeb
 
 int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 				uchar dtype, uchar flags){
@@ -44,12 +45,20 @@ int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 
 	if (blk->bid == JDB_ID_INVAL) {
 		
-
 		free(blk);
 
 		return -JE_LIMIT;
 
 	}
+	
+	_jdb_lock_handle(h);
+
+	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
+
+	h->hdr.nblocks++;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);			
 
 	blk->bitmap = (uchar *) malloc(blk->bmapsize);
 
@@ -689,7 +698,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 			ret = _jdb_gimme_data_blk(h, table, &blk, bid_list[bid]);
 			if(ret < 0){
 				//remove bid_list
-				return _jdb_rm_block_list(h, table, bid_list, bid);
+				return _jdb_rm_map_bid_entries(h, bid_list, bid);
 			}
 
 			copysize = nentries*typedef_entry->len;

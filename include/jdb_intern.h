@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "jhash.h"
 #include "jbits.h"
+#include "debug.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -777,6 +778,8 @@ int _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 		     struct jdb_cell *cell, struct jdb_typedef_blk* typedef_blk,
 		     struct jdb_typedef_blk_entry* typedef_entry,
 		     uchar* data, size_t datalen, int first);
+		     
+void _jdb_free_celldef_list(struct jdb_table *table);		     
 
 /*
 	search

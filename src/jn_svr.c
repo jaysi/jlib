@@ -16,7 +16,8 @@
 #include "netinet/in.h"
 #include <netdb.h>
 #else
-#include "winsock.h"
+#include "winsock2.h"
+#include "ws2tcpip.h"
 #endif
 #include "sys/types.h"
 #include "sys/stat.h"
@@ -28,8 +29,8 @@
 #include "errno.h"
 #ifdef linux
 #include "error.h"
-#endif
 #include "sys/wait.h"
+#endif
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
@@ -70,7 +71,7 @@ extern int _check_name(wchar_t * name, size_t max_size);
 		user_kick from comod:	o | x to the mod object or server
 		user_ban/unban from server: o | x to the server
 */
-
+/*
 static inline int _jn_perm_svr_ox(jac_h * jac, wchar_t * svr_obj_name,
 				  wchar_t * username)
 {
@@ -83,11 +84,16 @@ static inline int _jn_perm_svr_ox(jac_h * jac, wchar_t * svr_obj_name,
 
 	return -JE_NOPERM;
 }
+*/
 
 int jn_perm(jn_h * h, jn_conn * conn, wchar_t * obj_name, uchar ptype)
 {
 	int ret = -JE_NOPERM;
 	uchar otp;
+
+	_wdeb(L"WARNING: PERMISSIONS DISABLED DUE TO JAC->JDB MIGRATION!");
+	return 0;
+	/*
 
 	_lock_mx(&h->jac_mx);
 
@@ -111,7 +117,7 @@ int jn_perm(jn_h * h, jn_conn * conn, wchar_t * obj_name, uchar ptype)
 	case JNT_COMCLOSE:
 	case JNT_COMPAUSE:
 
-		ret = _jn_perm_svr_ox(&h->jac, h->svr_obj_name, conn->username);
+		ret = _jn_perm_svr_ox(&h->jac, h->svr_obj_name, conn->username);		
 
 		if (ret) {
 			if (!jac_find_object_dep
@@ -160,6 +166,7 @@ int jn_perm(jn_h * h, jn_conn * conn, wchar_t * obj_name, uchar ptype)
 	_unlock_mx(&h->jac_mx);
 
 	return ret;
+	*/
 }
 
 int jn_socket(jn_h * h)
@@ -172,6 +179,10 @@ int jn_socket(jn_h * h)
 	int yes = 1;
 	//char s[INET6_ADDRSTRLEN];
 	int rv;
+
+#ifdef _WIN32
+	int sizeofyes = sizeof(int);
+#endif
 
 #ifndef NDEBUG
 	jmxattr_t attr;
@@ -201,12 +212,20 @@ int jn_socket(jn_h * h)
 			continue;
 		}
 
+#ifndef _WIN32
 		if (setsockopt
 		    (fd, h->conf.so_level, h->conf.so_optname, &yes,
 		     sizeof(int)) == -1) {
 			return -JE_SETSOCKOPT;
 		}
-
+#else
+		if (setsockopt
+		    (fd, h->conf.so_level, h->conf.so_optname, (char*)&yes,
+		     sizeofyes) == -1) {
+			return -JE_SETSOCKOPT;
+		}
+		
+#endif
 		if (bind(fd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(fd);
 			//perror("server: bind");
@@ -371,6 +390,8 @@ int jn_close(jn_h * h, jn_conn * conn, uchar flags)
 		}
 #endif
 
+		_wdeb(L"WARNING: LOGOUT DISABLED DUE TO JAC->JDB MIGRATION");
+/*
 		//logout
 
 		_lock_mx(&h->jac_mx);
@@ -381,7 +402,7 @@ int jn_close(jn_h * h, jn_conn * conn, uchar flags)
 			return ret;
 		}
 		_unlock_mx(&h->jac_mx);
-
+*/
 		//remove from comods
 		_wdeb12(L"removing from comods, cnt = %u",
 			entry->ucom_list->cnt);
@@ -413,7 +434,8 @@ int jn_close(jn_h * h, jn_conn * conn, uchar flags)
 				job->next = NULL;
 				job->conn = entry;
 				job->type = JN_FT_RM_CONN;
-				job->uid = JACID_INVAL;
+				_wdeb(L"WARNING: DISABLED JACID_INVAL ASSIGNMENT");
+				//job->uid = JACID_INVAL;
 			}
 
 			for (j = 0; j < i; j++) {
@@ -826,13 +848,16 @@ void _jn_sigchld_handler(int s)
 int jn_init_svr(jn_h * h)
 {
 	int ret = 0;
+#ifndef _WIN32	
 	struct sigaction sa;
+#endif	
 
 	if (h->magic == JN_MAGIC)
 		return -JE_ALREADYINIT;
 
 	_wdeb1(L"mutexes init'ed");
 
+#ifndef _WIN32
 	sa.sa_handler = _jn_sigchld_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
@@ -842,6 +867,7 @@ int jn_init_svr(jn_h * h)
 	}
 
 	_wdeb1(L"signal handler set");
+#endif
 
 	jn_default_conf(&h->conf);
 	h->sockfd = jn_socket(h);
@@ -869,7 +895,9 @@ int jn_start_svr(jn_h * h)
 {
 
 	int ret = 0;
-	jac_orec orec;
+	
+	_wdeb(L"WARNING: DISABLED JAC ACCESS");
+	//jac_orec orec;
 
 	h->flags = JNF_SVR;
 
@@ -878,12 +906,13 @@ int jn_start_svr(jn_h * h)
 
 	_wdeb1(L"openning jac");
 	assert(sizeof(jn_hdr) == AES_BSIZE);
+	
 	ret = jac_open(&h->jac, L"jn.jac", L"helo", JHF_CRYPT | JHF_CRC);
 	if (ret < 0) {
 		_wdeb(L"failing %i ...", ret);
 		return ret;
 	}
-
+	
 	_wdeb1(L"checking for server object < %S >", h->svr_obj_name);
 
 	ret = jac_find_object(&h->jac, h->svr_obj_name, &orec);

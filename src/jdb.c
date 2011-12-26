@@ -150,9 +150,9 @@ int _jdb_cleanup_handle(struct jdb_handle *h)
 		close(h->fd);
 		h->fd = -1;
 	}
-	if (h->jfd != -1) {
-		close(h->jfd);
-		h->jfd = -1;
+	if (h->jf != NULL) {
+		fclose(h->jf);
+		h->jf = NULL;
 	}
 	if (h->conf.filename) {
 		free(h->conf.filename);

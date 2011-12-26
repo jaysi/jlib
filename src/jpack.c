@@ -174,7 +174,7 @@ size_t pack(unsigned char *buf, char *format, ...)
 		switch (*format) {
 		case 'h':	// 16-bit
 			size += 2;
-			h = va_arg(ap, short);	// promoted
+			h = va_arg(ap, int);	// promoted
 			packi16(buf, h);
 			buf += 2;
 			break;

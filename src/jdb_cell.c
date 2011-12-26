@@ -1,5 +1,7 @@
 #include "jdb.h"
 
+#define _wdeb_data_ptr	_wdeb
+
 static inline int _jdb_check_datalen(uchar dtype, uint32_t datalen)
 {
 
@@ -71,7 +73,7 @@ int _jdb_create_celldef(struct jdb_handle *h, struct jdb_table *table)
 	if (!blk)
 
 		return -JE_MALOC;
-
+		
 	blk->entry = (struct jdb_celldef_blk_entry *)
 
 	    malloc(sizeof(struct jdb_celldef_blk_entry) * h->hdr.celldef_bent);
@@ -83,10 +85,24 @@ int _jdb_create_celldef(struct jdb_handle *h, struct jdb_table *table)
 		return -JE_MALOC;
 
 	}
-
+	
 	blk->bid =
 	    _jdb_get_empty_map_entry(h, JDB_BTYPE_CELLDEF, 0,
 				     table->main.hdr.tid, 0);
+	if(blk->bid == JDB_ID_INVAL){
+		free(blk->entry);
+		free(blk);
+		return -JE_LIMIT;		
+	}
+	
+	_jdb_lock_handle(h);
+
+	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
+
+	h->hdr.nblocks++;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);		
 
 	bzero((char *)&blk->hdr, sizeof(struct jdb_celldef_blk_hdr));
 
@@ -271,8 +287,7 @@ int _jdb_write_celldef(struct jdb_handle *h, struct jdb_table *table)
 
 }
 
-static inline void _jdb_free_celldef_list(struct jdb_table
-					  *table)
+void _jdb_free_celldef_list(struct jdb_table *table)
 {
 
 	struct jdb_celldef_blk *del;

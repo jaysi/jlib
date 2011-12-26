@@ -22,6 +22,8 @@
 #include <stdio.h>
 #ifndef _WIN32
 #include <netinet/in.h>
+#else
+#include <winsock2.h>
 #endif
 /*
 #ifndef _ECC_H

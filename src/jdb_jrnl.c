@@ -110,7 +110,7 @@ int _jdb_request_jrnl_thread_exit(struct jdb_handle* h){
 		h->jrnl_fifo.cnt++;
 	}
 	
-	_sem_post(&h->jsem);
+	_post_sem(&h->jsem);
 	_unlock_mx(&h->jmx);
 	
 	return 0;
@@ -143,7 +143,7 @@ int _jdb_request_jrnl_write(struct jdb_handle* h, size_t bufsize, uchar* buf){
 		h->jrnl_fifo.cnt++;
 	}
 	
-	_sem_post(&h->jsem);
+	_post_sem(&h->jsem);
 	_unlock_mx(&h->jmx);
 	
 	return 0;
@@ -168,7 +168,7 @@ static inline char *_jdb_jrnl_filename(struct jdb_handle *h,
 	wcscat(jfile, JDB_DEF_JRNL_EXT);
 	
 	jcfile = (char*)malloc(WBYTES(jfile));
-	wcstombs(jfile, jcfile);
+	wcstombs(jcfile, jfile, WBYTES(jfile));
 	
 	free(jfile);	
 	
@@ -201,8 +201,8 @@ static inline uint32_t _jdb_get_jopid(struct jdb_handle* h){
 	uint32_t opid;
 	
 	_lock_mx(&h->jmx);
-	opid = h->hdr.jopid;
-	h->hdr.jopid++;
+	opid = h->jopid;
+	h->jopid++;
 	_unlock_mx(&h->jmx);
 	
 	return opid;

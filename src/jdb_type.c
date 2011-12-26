@@ -2,6 +2,7 @@
 
 #define _wdeb_type _wdeb
 #define _wdeb_load _wdeb
+#define _wdeb_data_ptr _wdeb
 
 size_t _jdb_base_dtype_size(uchar dtype)
 {
@@ -87,6 +88,20 @@ int _jdb_create_col_typedef(struct jdb_handle *h, struct jdb_table *table)
 	blk->bid =
 	    _jdb_get_empty_map_entry(h, JDB_BTYPE_COL_TYPEDEF, 0, table->main.hdr.tid,
 				     0);
+	if(blk->bid == JDB_ID_INVAL){
+		free(blk->entry);
+		free(blk);
+		return -JE_LIMIT;		
+	}
+	
+	_jdb_lock_handle(h);
+
+	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
+
+	h->hdr.nblocks++;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);		
 
 	memset(&blk->hdr, 0, sizeof(struct jdb_col_typedef_blk_hdr));
 
@@ -291,6 +306,22 @@ int _jdb_create_typedef(struct jdb_handle *h, struct jdb_table *table)
 	blk->bid =
 	    _jdb_get_empty_map_entry(h, JDB_BTYPE_TYPE_DEF, 0,
 				     table->main.hdr.tid, 0);
+
+	if(blk->bid == JDB_ID_INVAL){
+		free(blk->entry);
+		free(blk);
+		return -JE_LIMIT;		
+	}
+	
+	_jdb_lock_handle(h);
+
+	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
+
+	h->hdr.nblocks++;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);		
+
 
 	memset(&blk->hdr, 0, sizeof(struct jdb_typedef_blk_hdr));
 	

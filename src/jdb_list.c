@@ -1,5 +1,5 @@
 #include "jdb.h"
-#include <stdarg.h>
+#include "memmem.h"
 
 int jdb_init_filter(	struct jdb_filter* filter, size_t n, uint32_t col_start,
 			uint32_t col_end, uint32_t row_start, uint32_t row_end,
@@ -278,10 +278,16 @@ static inline void _jdb_filter_rm_duplicate_rows(struct jdb_rowset* rowset){
 	}
 }
 
-int jdb_list(struct jdb_handle* h, struct jdb_table* table, struct jdb_filter* filter){
-		/* TODO (#1#): write jdb_filter() code */
-		
-		
+int jdb_list(struct jdb_handle* h, struct jdb_table* table, struct jdb_filter* filter, struct jdb_rowset* rowset){
+	
+	int ret;
+	
+	ret = _jdb_filter_boundary(h, table, filter, rowset);
+	if(ret < 0) return ret;		
+	
+	_jdb_filter_rm_duplicate_rows(rowset);
+	
+	return 0;
 }
 
 

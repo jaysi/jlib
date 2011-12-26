@@ -1,7 +1,8 @@
 #include "jdb.h"
+#include "debug.h"
 
 #define _wdeb_data_ptr	_wdeb
-#define _wdeb_load	_web
+#define _wdeb_load	_wdeb
 
 int _jdb_free_data_ptr_list(struct jdb_table *table)
 {
@@ -22,33 +23,11 @@ int _jdb_create_data_ptr(struct jdb_handle *h, struct jdb_table* table)
 	struct jdb_cell_data_ptr_blk *data_ptr;
 	jdb_bid_t bid;
 	jdb_bent_t i;
-
-	_jdb_lock_handle(h);
-
-	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
-
-	if (table->data_ptr_list.first == NULL) {
-		bid = 0UL;
-	} else if ((bid = table->data_ptr_list.last->bid + h->hdr.dptr_bent + 1) >=
-		   h->hdr.max_blocks) {
-		return -JE_LIMIT;
-	}
-
-	h->hdr.nblocks++;
-	//h->hdr.ndata_ptrs++;
-	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
-	_jdb_unlock_handle(h);
-
+	
 	_wdeb_data_ptr(L"data_ptr bid %u", bid);
 
 	data_ptr = (struct jdb_cell_data_ptr_blk *)malloc(sizeof(struct jdb_cell_data_ptr_blk));
 	if (!data_ptr) {
-
-		_jdb_lock_handle(h);
-		h->hdr.nblocks--;
-		//h->hdr.ndata_ptrs--;
-		_jdb_unset_handle_flag(h, JDB_HMODIF, 0);
-		_jdb_unlock_handle(h);
 
 		return -JE_MALOC;
 	}
@@ -57,15 +36,28 @@ int _jdb_create_data_ptr(struct jdb_handle *h, struct jdb_table* table)
 					       * h->hdr.dptr_bent);
 	if (!data_ptr->entry) {
 
-		_jdb_lock_handle(h);
-		h->hdr.nblocks--;
-		//h->hdr.ndata_ptrs--;
-		_jdb_unset_handle_flag(h, JDB_HMODIF, 0);
-		_jdb_unlock_handle(h);
-
 		free(data_ptr);
 		return -JE_MALOC;
 	}
+	
+	bid =
+	    _jdb_get_empty_map_entry(h, JDB_BTYPE_CELL_DATA_PTR, 0,
+				     table->main.hdr.tid, 0);
+	if(bid == JDB_ID_INVAL){
+		free(data_ptr->entry);
+		free(data_ptr);
+		return -JE_LIMIT;		
+	}
+	
+	_jdb_lock_handle(h);
+
+	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
+
+	h->hdr.nblocks++;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);	
+	
 	data_ptr->next = NULL;
 	memset((void *)&data_ptr->hdr, '\0', sizeof(struct jdb_cell_data_ptr_blk_hdr));
 	memset((void *)data_ptr->entry, 0xff,

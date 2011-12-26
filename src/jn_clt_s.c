@@ -29,8 +29,8 @@
 #include "errno.h"
 #ifdef linux
 #include "error.h"
-#endif
 #include "sys/wait.h"
+#endif
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
@@ -39,6 +39,8 @@
 int jn_run_cb(jn_conn * conn, jn_pkt * pkt)
 {
 
+	return -JE_IMPLEMENT;
+/*
 	int ret = -JE_NOTFOUND;
 	jn_cb_entry *cb;
 	void (*fn) (void *arg, jn_conn * conn, jn_pkt * pkt);
@@ -63,5 +65,5 @@ int jn_run_cb(jn_conn * conn, jn_pkt * pkt)
 	}
 
 	return ret;
-
+*/
 }

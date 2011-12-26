@@ -874,4 +874,3 @@ int _jdb_read_fav_blk(struct jdb_handle *h, struct jdb_fav_blk *blk)
 
 }
 
-
