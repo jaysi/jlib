@@ -64,14 +64,14 @@ int _jdb_write_hdr(struct jdb_handle *h)
 	uchar buf[JDB_HDR_SIZE];
 	int ret;
 
-	_wdeb_wr(L"writing header...");
-
 	_jdb_lock_handle(h);
 
 	if (!(_jdb_get_handle_flag(h, 0) & JDB_HMODIF)) {
 		_jdb_unlock_handle(h);		
 		return 0;
 	}
+	
+	_wdeb_wr(L"writing header...");
 
 	_jdb_pack_hdr(&h->hdr, buf);
 
@@ -111,8 +111,10 @@ int _jdb_read_hdr(struct jdb_handle *h)
 	}
 	*/
 
-	if (ret < 0)
+	if (ret < 0){
+		_wdeb(L"failed to read, %i", ret);
 		return ret;
+	}
 
 	_jdb_decrypt(h, buf, buf, JDB_HDR_SIZE);
 

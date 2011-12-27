@@ -488,6 +488,10 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 	struct jdb_fav_blk* fav_blk;
 	int ret = 0, ret2;
 	
+	if(h->hdr.flags & JDB_O_WR_THREAD){
+		return _jdb_request_table_write(h, table);
+	}
+	
 	_wdeb_wr(L"writing data blocks...");
 		
 	for(data_blk = table->data_list.first; data_blk; data_blk = data_blk->next){

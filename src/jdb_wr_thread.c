@@ -154,6 +154,9 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 
 	nbids = table->map_chg_list_size + table->nwrblk;
 
+	_wdeb_wr(L"nbits: %u, map: %u, table_blk: %u", nbids,
+			table->map_chg_list_size, table->nwrblk);
+
 	entry->bid_list = (jdb_bid_t*)malloc(nbids*sizeof(jdb_bid_t));
 	if(!entry->bid_list){
 		free(entry);
@@ -174,6 +177,9 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	
 	entry->nblocks = nbids;
 	entry->bufsize = (nbids)*h->hdr.blocksize;
+	
+	_wdeb_wr(L"bufsize = %u, nblocks = %u", entry->nblocks, h->hdr.blocksize);	
+
 	entry->buf = (uchar*)malloc(entry->bufsize);	
 	if(!entry->buf){
 		
@@ -194,6 +200,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(data_blk->write){
 			_jdb_pack_data(h, data_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = data_blk->bid;
+			_wdeb_wr(L"DA:set bid %u to %u", i, entry->bid_list[i]);
 			i++;
 			data_blk->write = 0;
 		}
@@ -203,6 +210,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(data_ptr_blk->write){
 			_jdb_pack_data_ptr(h, data_ptr_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = data_ptr_blk->bid;
+			_wdeb_wr(L"DP:set bid %u to %u", i, entry->bid_list[i]);
 			i++;
 			data_ptr_blk->write = 0;
 		}
@@ -212,6 +220,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(celldef_blk->write){
 			_jdb_pack_celldef(h, celldef_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = celldef_blk->bid;
+			_wdeb_wr(L"CD:set bid %u to %u", i, entry->bid_list[i]);
 			i++;
 			celldef_blk->write = 0;
 		}
@@ -221,6 +230,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(col_typedef_blk->write){
 			_jdb_pack_col_typedef(h, col_typedef_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = col_typedef_blk->bid;
+			_wdeb_wr(L"CT:set bid %u to %u", i, entry->bid_list[i]);
 			i++;
 			col_typedef_blk->write = 0;
 		}
@@ -230,6 +240,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(typedef_blk->write){
 			_jdb_pack_typedef(h, typedef_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = typedef_blk->bid;
+			_wdeb_wr(L"TD:set bid %u to %u", i, entry->bid_list[i]);
 			i++;
 			typedef_blk->write = 0;
 		}
@@ -239,6 +250,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(fav_blk->write){
 			_jdb_pack_fav(h, fav_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = fav_blk->bid;
+			_wdeb_wr(L"F:set bid %u to %u", i, entry->bid_list[i]);
 			i++;
 			fav_blk->write = 0;		
 		}
@@ -247,6 +259,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	if(table->main.write){
 			_jdb_pack_table_def(h, &table->main, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = table->table_def_bid;
+			_wdeb_wr(L"MA:set bid %u to %u", i, entry->bid_list[i]);
 			i++;
 			table->main.write = 0;
 	}
@@ -256,6 +269,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 			if(map->bid == table->map_chg_list[j]){
 				_jdb_pack_map(h, map, entry->buf + (i*h->hdr.blocksize));
 				entry->bid_list[i] = table->map_chg_list[j];		
+				_wdeb_wr(L"MP:set bid %u to %u @ map_chg_list %u", i, entry->bid_list[i], j);
 				i++;
 			}			
 		}

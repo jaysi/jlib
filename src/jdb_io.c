@@ -11,11 +11,6 @@ int _jdb_seek_write(struct jdb_handle *h, uchar * buf, size_t len, off_t offset)
 		return -JE_SEEK;
 	if (hard_write(h->fd, (char *)buf, len) != len)
 		return -JE_WRITE;
-
-	_jdb_lock_handle(h);
-	h->hdr.nwr++;
-	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
-	_jdb_unlock_handle(h);
 	
 	_wdeb_crc(L"crc of written buffer 0x%08x", _jdb_crc32(buf, len));
 
@@ -24,13 +19,24 @@ int _jdb_seek_write(struct jdb_handle *h, uchar * buf, size_t len, off_t offset)
 
 int _jdb_seek_read(struct jdb_handle *h, uchar * buf, size_t len, off_t offset)
 {
+#ifndef NDEBUG
+	size_t red;
+#endif
 	_wdeb_io(L"seeking to offset < %u > to READ < %u > bytes on fd < %i >",
 		 offset, len, h->fd);
 	if (lseek(h->fd, offset, SEEK_SET) == ((off_t) - 1))
 		return -JE_SEEK;
-	if (hard_read(h->fd, (char *)buf, len) != len)
+#ifndef NDEBUG
+	if ((red = hard_read(h->fd, (char *)buf, len)) != len){
+		_wdeb_io(L"red: %u != %u", red, len);
 		return -JE_READ;
-		
+	}
+	
+#else
+	if (hard_read(h->fd, (char *)buf, len) != len){		
+		return -JE_READ;
+	}
+#endif		
 	_wdeb_crc(L"crc of read buffer 0x%08x", _jdb_crc32(buf, len));
 		
 	return 0;
