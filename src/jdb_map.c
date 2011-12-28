@@ -4,6 +4,7 @@
 #define _wdeb_nful(f, a...)
 #define _wdeb_list_map(f, a...)
 #define _wdeb_find(f, a...)
+#define _wdeb_tm _wdeb
 
 jdb_bent_t _jdb_max_nful(struct jdb_handle * h, jdb_blk_t btype)
 {
@@ -596,4 +597,35 @@ int _jdb_write_map(struct jdb_handle *h)
 	}
 
 	return ret;
+}
+
+int _jdb_map_chg_proc(struct jdb_handle* h, jdb_bid_t bid, struct jdb_table* table, jdb_bid_t map_bid){
+	int cntr;
+	int exists = 0;
+	if(h->hdr.flags & JDB_O_WR_THREAD){		
+		for(cntr = 0; cntr < table->map_chg_ptr; cntr++){
+			if(table->map_chg_list[cntr] == map_bid){
+				_wdeb_tm(L"found m_c_l[ %u ] = %u", cntr, map_bid);
+				exists = 1;
+				break;
+			}						
+		}
+		if(cntr == table->map_chg_list_size){
+			_wdeb_tm(L"cntr[ %u ] = m_c_l_size %u", cntr, table->map_chg_list_size);
+			table->map_chg_list_size += JDB_MAP_CHG_LIST_BUCK;
+			table->map_chg_list = realloc(table->map_chg_list, table->map_chg_list_size);
+			table->map_chg_ptr = table->map_chg_list_size - JDB_MAP_CHG_LIST_BUCK + 1;
+			table->map_chg_list[table->map_chg_ptr-1] = map_bid;
+			_wdeb_tm(L"m_c_l_size now %u, set pos %u to %u", table->map_chg_list_size, table->map_chg_list_size - JDB_MAP_CHG_LIST_BUCK, map_bid);
+		} else {
+			if(!exists){
+				_wdeb_tm(L"cntr[ %u ] set to %u", cntr, map_bid);
+				table->map_chg_list[cntr] = map_bid;
+				table->map_chg_ptr++;
+			}
+		}
+		
+	}
+	
+	return 0;
 }

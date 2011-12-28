@@ -250,8 +250,12 @@ int _jdb_create(struct jdb_handle *h)
 	_wdeb_startup(L"called, filename: %ls, flags: 0x%04x", h->conf.filename,
 		      h->conf.flags);
 
-	wcstombs(filename, h->conf.filename, MAX_PATHNAME);	
+	wcstombs(filename, h->conf.filename, MAX_PATHNAME);
+#ifdef _WIN32	
 	h->fd = open(filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
+#else
+	h->fd = open(filename, O_RDWR | O_CREAT | O_EXCL , S_IREAD | S_IWRITE);
+#endif
 
 	_wdeb_startup(L"opened %i ", h->fd);
 
@@ -305,7 +309,11 @@ int _jdb_open(struct jdb_handle *h)
 		      h->conf.flags);
 
 	wcstombs(filename, h->conf.filename, MAX_PATHNAME);
+#ifdef _WIN32	
 	h->fd = open(filename, O_RDWR | O_BINARY);
+#else
+	h->fd = open(filename, O_RDWR);
+#endif
 
 	if (h->fd < 0)
 		return -JE_OPEN;

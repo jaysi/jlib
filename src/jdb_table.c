@@ -107,6 +107,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	table->nwrblk = 0UL;
 	table->map_chg_list_size = 0UL;
+	table->map_chg_ptr = 0UL;
 	table->map_chg_list = NULL;
 		
 	table->main.hdr.type = JDB_BTYPE_TABLE_DEF;

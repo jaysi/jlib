@@ -152,10 +152,10 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	entry = (struct jdb_wr_fifo_entry*)malloc(sizeof(struct jdb_wr_fifo_entry));
 	if(!entry) return -JE_MALOC;
 
-	nbids = table->map_chg_list_size + table->nwrblk;
+	nbids = table->map_chg_ptr + table->nwrblk;
 
-	_wdeb_wr(L"nbits: %u, map: %u, table_blk: %u", nbids,
-			table->map_chg_list_size, table->nwrblk);
+	_wdeb_wr(L"nbids: %u, map: %u, table_blk: %u", nbids,
+			table->map_chg_ptr, table->nwrblk);
 
 	entry->bid_list = (jdb_bid_t*)malloc(nbids*sizeof(jdb_bid_t));
 	if(!entry->bid_list){
@@ -264,7 +264,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 			table->main.write = 0;
 	}
 	
-	for(j = 0; j < table->map_chg_list_size; j++){
+	for(j = 0; j < table->map_chg_ptr; j++){
 		for(map = h->map_list.first; map; map = map->next){
 			if(map->bid == table->map_chg_list[j]){
 				_jdb_pack_map(h, map, entry->buf + (i*h->hdr.blocksize));
@@ -274,6 +274,8 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 			}			
 		}
 	}
+	
+	table->map_chg_ptr = 0UL;
 	
 	_lock_mx(&h->wrmx);
 	

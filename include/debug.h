@@ -47,8 +47,8 @@ void _dbuf(unsigned char* buf, int len);
 				wprintf(format, ## args); \
 				wprintf(L" }\n");
 #else
-#define _wdeb(format, args...) 	wprintf(L"_deb: %s()@ %ls-> %d { ", __func__ \
-					, __WFILE__, __LINE__); \
+#define _wdeb(format, args...) 	wprintf(L"_deb: %s()@ %s-> %d { ", __func__ \
+					, __FILE__, __LINE__); \
 				wprintf(format, ## args); \
 				wprintf(L" }\n");
 

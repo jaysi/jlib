@@ -484,7 +484,7 @@ struct jdb_table {
 	jdb_bid_t table_def_bid;
 
 	jdb_bid_t nwrblk;
-	jdb_bid_t map_chg_list_size;
+	jdb_bid_t map_chg_list_size, map_chg_ptr;
 	jdb_bid_t* map_chg_list;
 	
 	struct jdb_table_def_blk main;
@@ -747,7 +747,8 @@ int _jdb_list_map_match(struct jdb_handle *h, jdb_blk_t btype,
 jdb_bid_t _jdb_find_first_map_match(struct jdb_handle *h, jdb_blk_t btype,
 				    jdb_data_t dtype, jdb_tid_t tid,
 				    jdb_bent_t nful, uchar cmp_flags);
-struct jdb_map_blk_entry* _jdb_get_map_entry_ptr(struct jdb_handle* h, jdb_bid_t bid);				    
+struct jdb_map_blk_entry* _jdb_get_map_entry_ptr(struct jdb_handle* h, jdb_bid_t bid);
+int _jdb_map_chg_proc(struct jdb_handle* h, jdb_bid_t bid, struct jdb_table* table, jdb_bid_t map_bid);			    
 
 /*
 	memmory
@@ -800,28 +801,36 @@ int _jdb_table_handle(struct jdb_handle* h, wchar_t* name, struct jdb_table** ta
 #define _JDB_MAP_BENT(bid, map_bent) (((bid)%((map_bent)+1))-1)
 
 #define JDB_MAP_CHG_LIST_BUCK	10
-
+/* re-written as function call
 #define _JDB_MAP_CHG_PROC(h, bid, table, map_bid)\
 	if(h->hdr.flags & JDB_O_WR_THREAD){\
 		int cntr;\
 		for(cntr = 0; cntr < table->map_chg_list_size; cntr++){\
-			if(table->map_chg_list[cntr] == map_bid) break;\
+			if(table->map_chg_list[cntr] == map_bid){\
+				_wdeb_tm(L"found m_c_l[ %u ] = %u", cntr, map_bid);\
+				break;\
+			}\
 		}\
 		if(cntr == table->map_chg_list_size){\
+			_wdeb_tm(L"cntr[ %u ] = m_c_l_size %u", cntr, table->map_chg_list_size);\
 			table->map_chg_list_size += JDB_MAP_CHG_LIST_BUCK;\
 			table->map_chg_list = realloc(table->map_chg_list, table->map_chg_list_size);\
 			table->map_chg_list[table->map_chg_list_size - JDB_MAP_CHG_LIST_BUCK] = map_bid;\
+			_wdeb_tm(L"m_c_l_size now %u, set pos %u to %u", table->map_chg_list_size, table->map_chg_list_size - JDB_MAP_CHG_LIST_BUCK, map_bid);\
+		} else {\
+			_wdeb_tm(L"cntr[ %u ] set to %u", cntr, map_bid);\
 		}\
 	}
-
+*/
 #define _JDB_SET_WR(h, blk, bid, table, map_chg_flag)\
+	_wdeb(L"_JDB_SET_WR->bid= %u (IS different with map bid), chg_flag = %i", bid, map_chg_flag);\
 	if((blk)->write){\
 		(blk)->write++;\
-		if(map_chg_flag) _JDB_MAP_CHG_PROC(h, (blk)->bid, table, _JDB_MAP_BID(bid, h->hdr.map_bent))\
+		if(map_chg_flag) _jdb_map_chg_proc(h, bid, table, _JDB_MAP_BID(bid, h->hdr.map_bent));\
 	} else {\
 		(blk)->write = 1;\
 		table->nwrblk++;\
-		if(map_chg_flag) _JDB_MAP_CHG_PROC(h, (blk)->bid, table, _JDB_MAP_BID(bid, h->hdr.map_bent))\
+		if(map_chg_flag) _jdb_map_chg_proc(h, bid, table, _JDB_MAP_BID(bid, h->hdr.map_bent));\
 	}
 
 
