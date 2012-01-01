@@ -51,10 +51,10 @@ void jdbif_list_tables(struct jdb_handle *h)
 
 void jdbif_llist_tables(struct jdb_handle *h)
 {
-	struct jdb_table *table;
-	wprintf(L"Loaded Table List{\n");
+	struct jdb_table *table;	
+	wprintf(L"Loaded Table List (cnt = %u) {\n", h->table_list.cnt);
 	for (table = h->table_list.first; table; table = table->next) {
-		wprintf(L"\t%ls\n", table->main.name);
+		wprintf(L"\t%ls - TID: %u\n", table->main.name, table->main.hdr.tid);
 	}
 	wprintf(L"}Loaded Table List;\n");
 }

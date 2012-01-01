@@ -1,3 +1,10 @@
+/*
+
+/jaysi\
+~~~ ~~~
+
+*/
+
 #ifndef _JDB_H
 #define _JDB_H
 

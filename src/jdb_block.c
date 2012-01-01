@@ -3,6 +3,7 @@
 #define _wdeb_io _wdeb
 #define _wdeb_crc _wdeb
 #define _wdeb_map(f, a...)
+#define _wdeb_upack _wdeb
 
 int _jdb_write_block(struct jdb_handle *h, uchar * block, jdb_bid_t bid,
 		     uchar flags)
@@ -332,7 +333,7 @@ int _jdb_read_table_def_blk(struct jdb_handle *h, struct jdb_table *table)
 
 			return ret;
 
-		}
+		}		
 		
 	} else {
 	
@@ -356,7 +357,7 @@ int _jdb_read_table_def_blk(struct jdb_handle *h, struct jdb_table *table)
 
 		table->main.name =
 		    (wchar_t *) malloc((table->main.hdr.namelen + 1) *
-				       sizeof(wchar_t));
+				       sizeof(wchar_t));		
 
 		if (jcstow
 		    (buf + sizeof(struct jdb_table_def_blk_hdr),
@@ -368,6 +369,14 @@ int _jdb_read_table_def_blk(struct jdb_handle *h, struct jdb_table *table)
 			ret = -JE_NOJCS;
 
 		}
+		
+		#ifndef NDEBUG
+		if(!ret){
+			_wdeb_upack(L"read table def %ls", table->main.name);
+		} else {
+			_wdeb_upack(L"failed to unpack table name");
+		}
+		#endif
 		
 	}
 

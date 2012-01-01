@@ -77,6 +77,7 @@ int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 
 	blk->hdr.flags = 0x00;
 	blk->hdr.dtype = dtype;
+	blk->write = 0;
 	
 	_JDB_SET_WR(h, blk, blk->bid, table, 1);
 	//blk->write = 1;

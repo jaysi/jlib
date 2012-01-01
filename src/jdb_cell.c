@@ -110,9 +110,9 @@ int _jdb_create_celldef(struct jdb_handle *h, struct jdb_table *table)
 	       sizeof(struct jdb_celldef_blk_entry) * h->hdr.celldef_bent);
 
 	blk->next = NULL;
-	
+	blk->write = 0UL;
 	blk->hdr.type = JDB_BTYPE_CELLDEF;
-
+	
 	_JDB_SET_WR(h, blk, blk->bid, table, 1);
 	//blk->write = 1;
 

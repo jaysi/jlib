@@ -53,7 +53,7 @@ int _jdb_create_fav(struct jdb_handle *h, struct jdb_table *table)
 	memset(&blk->hdr, 0, sizeof(struct jdb_fav_blk_hdr));
 	
 	blk->hdr.type = JDB_BTYPE_TABLE_FAV;
-
+	blk->write = 0UL;
 	blk->next = NULL;
 
 	_JDB_SET_WR(h, blk, blk->bid, table, 1);

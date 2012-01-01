@@ -67,6 +67,7 @@ int _jdb_create_data_ptr(struct jdb_handle *h, struct jdb_table* table)
 	
 	data_ptr->nent = 0UL;
 	data_ptr->bid = bid;
+	data_ptr->write = 0UL;
 	_JDB_SET_WR(h, data_ptr, bid, table, 1);
 	//data_ptr->write = 1;
 

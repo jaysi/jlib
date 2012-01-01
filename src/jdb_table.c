@@ -138,7 +138,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	wcscpy(table->main.name, name);
 	
 	table->main.hdr.namelen = namelen;
-
+	table->main.write = 0UL;
 	_JDB_SET_WR(h, &table->main, table->table_def_bid, table, 1);
 	//table->main.write = 1;
 
@@ -234,9 +234,7 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 
 	table->data_list.first = NULL;
 
-	table->fav_list.first = NULL;
-
-	table->next = NULL;
+	table->fav_list.first = NULL;	
 
 	if ((ret = _jdb_read_table_def_blk(h, table)) < 0)
 
@@ -245,6 +243,7 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 	table->main.write = 0;
 	table->nwrblk = 0UL;
 	table->map_chg_list_size = 0UL;
+	table->map_chg_ptr = 0UL;
 	table->map_chg_list = NULL;	
 	
 	_wdeb_load(L"Loading typedefs...");
@@ -399,7 +398,9 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 
 	}
 */	
+	table->next = NULL;
 	if(!h->table_list.first){
+		_wdeb_load(L"added %ls as first", table->main.name);
 		h->table_list.first = table;
 		h->table_list.last = table;
 		h->table_list.cnt = 1UL;
@@ -407,6 +408,7 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 		h->table_list.last->next = table;
 		h->table_list.last = table;
 		h->table_list.cnt++;
+		_wdeb_load(L"added %ls as last, cnt = %u", table->main.name, h->table_list.cnt);
 	}	
 
 	return 0;
@@ -622,6 +624,7 @@ int jdb_close_table(struct jdb_handle *h, wchar_t * name)
 			} else {
 				prev->next = entry->next;
 			}
+			h->table_list.cnt--;
 			break;
 		}
 	
@@ -639,7 +642,7 @@ int jdb_close_table(struct jdb_handle *h, wchar_t * name)
 	_jdb_free_data_list(entry);
 	_jdb_free_celldef_list(entry);
 	_jdb_free_fav_list(entry);
-	_jdb_free_table_def(entry);
+	_jdb_free_table_def(entry);	
 	
 	return 0;
 }

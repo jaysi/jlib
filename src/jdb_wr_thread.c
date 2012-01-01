@@ -29,20 +29,30 @@ void* _jdb_write_thread(void* arg){
 		
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldcancelstate);
 		
-		//write here		
+		//write here
 		
-		if(entry->hdrbuf)			
+		_wdeb_wr(L"got write request");	
+		
+		if(entry->hdrbuf){
+			_wdeb_wr(L"header has been modified.");
 			_jdb_seek_write(h, entry->hdrbuf, JDB_HDR_SIZE, 0);
-				
+		}
+		
+		_wdeb_wr(L"writing blocks...");
 		i = 0;		
-		for(pos = 0; pos < entry->bufsize; pos+=h->hdr.blocksize){
+		for(pos = 0; pos < entry->bufsize; pos += h->hdr.blocksize){
+			_wdeb_wr(L"BLOCK %u @ %u", entry->bid_list[i], pos);	
 			_jdb_write_block(h, entry->buf + pos, entry->bid_list[i], 0x00);
 			assert(i <= entry->nblocks);
 			i++;
 		}				
 		
+		_wdeb_wr(L"done writing.");
+		
 		pthread_setcancelstate(oldcancelstate, NULL);	
 		_unlock_mx(&h->rdmx);
+		
+		_wdeb_wr(L"free()ing buffers.");
 				
 		if(entry->hdrbuf) free(entry->hdrbuf);
 		free(entry->bid_list);
@@ -147,12 +157,12 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	
 	int ret = 0, ret2;
 	
-	_wdeb_wr(L"requesting write table write...");	
+	_wdeb_wr(L"requesting write table write...");
+	
+	if(!(nbids = table->map_chg_ptr + table->nwrblk)) return 0;
 
 	entry = (struct jdb_wr_fifo_entry*)malloc(sizeof(struct jdb_wr_fifo_entry));
-	if(!entry) return -JE_MALOC;
-
-	nbids = table->map_chg_ptr + table->nwrblk;
+	if(!entry) return -JE_MALOC;	
 
 	_wdeb_wr(L"nbids: %u, map: %u, table_blk: %u", nbids,
 			table->map_chg_ptr, table->nwrblk);
@@ -178,8 +188,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	entry->nblocks = nbids;
 	entry->bufsize = (nbids)*h->hdr.blocksize;
 	
-	_wdeb_wr(L"bufsize = %u, nblocks = %u", entry->nblocks, h->hdr.blocksize);	
-
+	_wdeb_wr(L"bufsize = %u", entry->bufsize);
 	entry->buf = (uchar*)malloc(entry->bufsize);	
 	if(!entry->buf){
 		
@@ -192,15 +201,15 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		return -JE_MALOC;
 	}
 	
-	entry->next = NULL;	
-
+	entry->next = NULL;
+	
 	i = 0UL;
 	
 	for(data_blk = table->data_list.first; data_blk; data_blk = data_blk->next){
 		if(data_blk->write){
 			_jdb_pack_data(h, data_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = data_blk->bid;
-			_wdeb_wr(L"DA:set bid %u to %u", i, entry->bid_list[i]);
+			_wdeb_wr(L"DA:set slot %u to %u", i, entry->bid_list[i]);
 			i++;
 			data_blk->write = 0;
 		}
@@ -210,7 +219,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(data_ptr_blk->write){
 			_jdb_pack_data_ptr(h, data_ptr_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = data_ptr_blk->bid;
-			_wdeb_wr(L"DP:set bid %u to %u", i, entry->bid_list[i]);
+			_wdeb_wr(L"DP:set slot %u to %u", i, entry->bid_list[i]);
 			i++;
 			data_ptr_blk->write = 0;
 		}
@@ -220,7 +229,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(celldef_blk->write){
 			_jdb_pack_celldef(h, celldef_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = celldef_blk->bid;
-			_wdeb_wr(L"CD:set bid %u to %u", i, entry->bid_list[i]);
+			_wdeb_wr(L"CD:set slot %u to %u", i, entry->bid_list[i]);
 			i++;
 			celldef_blk->write = 0;
 		}
@@ -230,7 +239,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(col_typedef_blk->write){
 			_jdb_pack_col_typedef(h, col_typedef_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = col_typedef_blk->bid;
-			_wdeb_wr(L"CT:set bid %u to %u", i, entry->bid_list[i]);
+			_wdeb_wr(L"CT:set slot %u to %u", i, entry->bid_list[i]);
 			i++;
 			col_typedef_blk->write = 0;
 		}
@@ -240,7 +249,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(typedef_blk->write){
 			_jdb_pack_typedef(h, typedef_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = typedef_blk->bid;
-			_wdeb_wr(L"TD:set bid %u to %u", i, entry->bid_list[i]);
+			_wdeb_wr(L"TD:set slot %u to %u", i, entry->bid_list[i]);
 			i++;
 			typedef_blk->write = 0;
 		}
@@ -250,7 +259,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 		if(fav_blk->write){
 			_jdb_pack_fav(h, fav_blk, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = fav_blk->bid;
-			_wdeb_wr(L"F:set bid %u to %u", i, entry->bid_list[i]);
+			_wdeb_wr(L"F:set slot %u to %u", i, entry->bid_list[i]);
 			i++;
 			fav_blk->write = 0;		
 		}
@@ -259,7 +268,7 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	if(table->main.write){
 			_jdb_pack_table_def(h, &table->main, entry->buf + (i*h->hdr.blocksize));
 			entry->bid_list[i] = table->table_def_bid;
-			_wdeb_wr(L"MA:set bid %u to %u", i, entry->bid_list[i]);
+			_wdeb_wr(L"MA:set slot %u to %u", i, entry->bid_list[i]);
 			i++;
 			table->main.write = 0;
 	}
@@ -267,15 +276,19 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	for(j = 0; j < table->map_chg_ptr; j++){
 		for(map = h->map_list.first; map; map = map->next){
 			if(map->bid == table->map_chg_list[j]){
+				map->write = 0UL;
 				_jdb_pack_map(h, map, entry->buf + (i*h->hdr.blocksize));
 				entry->bid_list[i] = table->map_chg_list[j];		
-				_wdeb_wr(L"MP:set bid %u to %u @ map_chg_list %u", i, entry->bid_list[i], j);
+				_wdeb_wr(L"MP:set slot %u to %u @ map_chg_list %u", i, entry->bid_list[i], j);
 				i++;
 			}			
 		}
 	}
+		
+	_wdeb_wr(L"i = %u, nbids = %u", i, nbids);
 	
 	table->map_chg_ptr = 0UL;
+	table->nwrblk = 0UL;
 	
 	_lock_mx(&h->wrmx);
 	

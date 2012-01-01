@@ -1,3 +1,10 @@
+/*
+
+/jaysi\
+~~~ ~~~
+
+*/
+
 #ifndef _JSS_H
 #define _JSS_H
 

@@ -3,7 +3,8 @@
 #define _wdeb_map(f, a...)
 #define _wdeb_nful(f, a...)
 #define _wdeb_list_map(f, a...)
-#define _wdeb_find(f, a...)
+#define _wdeb_find	_wdeb
+#define _wdeb_inc _wdeb
 #define _wdeb_tm _wdeb
 
 jdb_bent_t _jdb_max_nful(struct jdb_handle * h, jdb_blk_t btype)
@@ -148,7 +149,9 @@ static inline struct jdb_map* _jdb_get_map_ptr_by_bid(struct jdb_handle* h,
 	jdb_bid_t i;
 	struct jdb_map* map;
 	map = h->map_list.first;
-	for(i = 0; i <= _JDB_MAP_ORDER(bid, h->hdr.map_bent); i++){
+	assert(map);
+	_wdeb_find(L"_JDB_MAP_ORDER(bid(%u), h->hdr.map_bent(%u)) = %u",bid,h->hdr.map_bent, _JDB_MAP_ORDER(bid, h->hdr.map_bent));
+	for(i = 0; i < _JDB_MAP_ORDER(bid, h->hdr.map_bent); i++){
 		map = map->next;
 		if(!map) break;
 	}
@@ -192,7 +195,10 @@ int _jdb_inc_map_nful_by_bid(struct jdb_handle *h, jdb_bid_t bid, jdb_bent_t n)
 {
 	jdb_bent_t map_bent;
 	struct jdb_map *map = _jdb_get_map_ptr_by_bid(h, bid);
-	if(!map) return -JE_NOTFOUND;
+	if(!map){
+		_wdeb_inc(L"map ptr of bid %u not found", bid);
+		return -JE_NOTFOUND;		
+	}
 
 	//for (map = h->map_list.first; map; map = map->next) {
 	//	if ( (bid > map->bid) && (bid < map->bid + h->hdr.map_bent) ) {
@@ -205,7 +211,7 @@ int _jdb_inc_map_nful_by_bid(struct jdb_handle *h, jdb_bid_t bid, jdb_bent_t n)
 			     map->entry[map_bent].blk_type,
 			     map->entry[map_bent].dtype,
 			     map->entry[map_bent].nful);
-			map->entry[map_bent].nful-=n;
+			map->entry[map_bent].nful+=n;
 			map->write++;
 			return 0;
 	//	}

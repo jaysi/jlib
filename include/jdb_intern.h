@@ -823,7 +823,7 @@ int _jdb_table_handle(struct jdb_handle* h, wchar_t* name, struct jdb_table** ta
 	}
 */
 #define _JDB_SET_WR(h, blk, bid, table, map_chg_flag)\
-	_wdeb(L"_JDB_SET_WR->bid= %u (IS different with map bid), chg_flag = %i", bid, map_chg_flag);\
+	_wdeb(L"_JDB_SET_WR->bid= %u (IS different with map bid), chg_flag = %i, blk->write = %u", bid, map_chg_flag, (blk)->write);\
 	if((blk)->write){\
 		(blk)->write++;\
 		if(map_chg_flag) _jdb_map_chg_proc(h, bid, table, _JDB_MAP_BID(bid, h->hdr.map_bent));\

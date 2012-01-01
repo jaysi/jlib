@@ -3,6 +3,7 @@
 #define _wdeb_type _wdeb
 #define _wdeb_load _wdeb
 #define _wdeb_data_ptr _wdeb
+#define _wdeb_add _wdeb
 
 size_t _jdb_base_dtype_size(uchar dtype)
 {
@@ -109,7 +110,7 @@ int _jdb_create_col_typedef(struct jdb_handle *h, struct jdb_table *table)
 	       sizeof(struct jdb_col_typedef_blk_entry) * h->hdr.col_typedef_bent);
 
 	blk->hdr.type = JDB_BTYPE_COL_TYPEDEF;
-	
+	blk->write = 0UL;
 	blk->next = NULL;
 
 	_JDB_SET_WR(h, blk, blk->bid, table, 1);
@@ -326,6 +327,7 @@ int _jdb_create_typedef(struct jdb_handle *h, struct jdb_table *table)
 	memset(&blk->hdr, 0, sizeof(struct jdb_typedef_blk_hdr));
 	
 	blk->hdr.type = JDB_BTYPE_TYPE_DEF;
+	blk->write = 0UL;
 
 	blk->next = NULL;
 
@@ -803,6 +805,8 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 		
 		
 	}
+	
+	_wdeb_add(L"typedef block created");
 
 	for (bent = 0; bent < h->hdr.col_typedef_bent; bent++) {
 
