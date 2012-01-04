@@ -35,15 +35,17 @@ void jdbif_dump_typedef_hdr(struct jdb_handle *h, struct jdb_typedef_blk_hdr hdr
 
 void jdbif_dump_typedef_entries(struct jdb_handle *h, struct jdb_typedef_blk* blk){
 	jdb_bent_t bent;
-	wprintf(L"\tslot -> flags; type_id; base_type_id; type_length (chunksize if VAR flag is set)\n");
+	wprintf(L"\t[slot]-> flags; type_id; base_type_id; type_length (chunksize if VAR flag is set)\n");
 	for(bent = 0; bent < h->hdr.typedef_bent; bent++){
-		wprintf(L"%u -> 0x%02x; 0x%02x; 0x%02x; %u", bent,
-			blk->entry[bent].flags, blk->entry[bent].type_id,
-			blk->entry[bent].base, blk->entry[bent].len);
-		if (!(bent % 2))
-			wprintf(L"\n");
-		else
-			wprintf(L"\t");			
+		if(blk->entry[bent].type_id != JDB_TYPE_EMPTY){
+			wprintf(L"[%u]-> 0x%02x; 0x%02x; 0x%02x; %u", bent,
+				blk->entry[bent].flags, blk->entry[bent].type_id,
+				blk->entry[bent].base, blk->entry[bent].len);
+			if (!(bent % 2))
+				wprintf(L"\n");
+			else
+				wprintf(L"\t");
+		}
 	}
 }
 
@@ -55,14 +57,16 @@ void jdbif_dump_col_typedef_hdr(struct jdb_handle* h, struct jdb_col_typedef_blk
 
 void jdbif_dump_col_typedef_entries(struct jdb_handle* h, struct jdb_col_typedef* blk){
 	jdb_bent_t bent;
-	wprintf(L"slot -> type_id; column_id\n");
+	wprintf(L"[slot]-> type_id; column_id\n");
 	for(bent = 0; bent < h->hdr.col_typedef_bent; bent++){
-		wprintf(L"%u -> 0x%02x; %u", bent, blk->entry[bent].type_id,
-			blk->entry[bent].col);
-		if (!(bent % 4))
-			wprintf(L"\n");
-		else
-			wprintf(L"\t");						
+		if(blk->entry[bent].type_id != JDB_TYPE_EMPTY){
+			wprintf(L"[%u]-> 0x%02x; %u", bent, blk->entry[bent].type_id,
+				blk->entry[bent].col);
+			if (!(bent % 4))
+				wprintf(L"\n");
+			else
+				wprintf(L"\t");
+		}			
 	}
 }
 
@@ -209,11 +213,12 @@ void jdbif_table_type_find_col_type(struct jdb_handle* h){
 	wprintf(L"Table name: ");
 	wscanf(L"%ls", name);
 	wprintf(L"Column: ");
-	wscanf(L"%u", &col);	
-
+	wscanf(L"%u", &col);
+	
 	wprintf(L"finding column type...");
 	type_id = jdb_find_col_type(h, name, col);
 	wprintf(L"\t[ %i (0x%02x) ]\n", (int)type_id, type_id);
+
 }
 
 void jdbif_table_type_rm_col_type(struct jdb_handle* h){

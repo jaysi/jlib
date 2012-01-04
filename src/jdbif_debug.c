@@ -20,13 +20,13 @@ void jdbif_dump_map_hdr(struct jdb_handle *h, struct jdb_map_blk_hdr hdr)
 	     hdr.type, hdr.flags, hdr.nset, h->hdr.map_bent, hdr.crc32);
 }
 
-void jdbif_dump_map_entries(struct jdb_handle *h, struct jdb_map *map)
+void jdbif_dump_map_entries_all(struct jdb_handle *h, struct jdb_map *map)
 {
 	jdb_bent_t i;
 	wprintf
-	    (L"\tslot -> block_type; data_type; full_entries; table_id; bid\n");
+	    (L"\t[slot]-> block_type; data_type; full_entries; table_id; bid\n");
 	for (i = 0; i < h->hdr.map_bent; i++) {
-		wprintf(L"\t%u -> 0x%02x; 0x%02x; %u; %u; #%u",
+		wprintf(L"\t[%u]-> 0x%02x; 0x%02x; %u; %u; #%u",
 			i, map->entry[i].blk_type, map->entry[i].dtype,
 			map->entry[i].nful, map->entry[i].tid,
 			map->bid + i + 1);
@@ -95,6 +95,62 @@ void jdbif_dump_table_def_block(struct jdb_handle* h, jdb_bid_t bid){
 	wprintf(L"}Table Defintion Dump;\n");
 }
 
+void jdbif_dump_celldef_entry(struct jdb_handle* h, struct jdb_cell_blk_entry* celldef){
+	wprintf(L"R: %u\tC: %u\tDCRC: 0x%04x\tDTYP: 0x%02x\nDLEN: %u\tDPTR: %u\tDPTRE: %u\nACC: %i-%i-%i %i:%i:%i\n"
+	, celldef->row, celldef->col,
+	celldef->data_crc32, celldef->data_type,
+	celldef->datalen, celldef->bid_entry, celldef->bent,
+	(int)celldef->last_access_d[0]+BASE_YEAR,
+	(int)celldef->last_access_d[1],
+	(int)celldef->last_access_d[2],
+	(int)celldef->last_access_t[0],
+	(int)celldef->last_access_t[1],
+	(int)celldef->last_access_t[2]);
+}
+
+void jdbif_dump_cell_def_block(struct jdb_handle* h, jdb_bid_t bid){
+	struct jdb_celldef_blk blk;
+	int ret;
+	blk.bid = bid;
+	
+	wprintf(L"reading table_def block...");
+	ret = _jdb_read_celldef_blk(h, &blk);
+	if (ret < 0) {
+		wprintf(L"\t[FAIL]\n");
+		jif_perr(ret);
+		return;
+
+	} else
+		wprintf(L"\t[DONE]\n");
+	
+	wprintf(L"Cell Defintion Dump{\n");
+	wprintf
+	    (L"\tType: 0x%02x\tFlags: 0x%02x\tNSet: ? of %u\tCRC32: 0x%04x\n",
+	     blk.hdr.type, blk.hdr.flags, h->hdr.celldef_bent, blk.hdr.crc32);	
+	for(ret = 0; ret < h->hdr.celldef_bent; ret++){
+		jdbif_dump_celldef_entry(h, &blk.entry[ret]);
+	}
+	wprintf(L"}Cell Defintion Dump;\n");
+}
+
+
+void jdbif_dump_typedef_entries_all(struct jdb_handle *h, struct jdb_typedef_blk* blk){
+	jdb_bent_t bent;
+	wprintf(L"\t[slot]-> flags; type_id; base_type_id; type_length (chunksize if VAR flag is set)\n");
+	for(bent = 0; bent < h->hdr.typedef_bent; bent++){
+		//if(blk->entry[bent].type_id != JDB_TYPE_EMPTY){
+			wprintf(L"[%u]-> 0x%02x; 0x%02x; 0x%02x; %u", bent,
+				blk->entry[bent].flags, blk->entry[bent].type_id,
+				blk->entry[bent].base, blk->entry[bent].len);
+			if (!(bent % 2))
+				wprintf(L"\n");
+			else
+				wprintf(L"\t");
+		//}
+	}
+}
+
+
 void jdbif_dump_typedef_block(struct jdb_handle* h, jdb_bid_t bid){
 	struct jdb_typedef_blk blk;
 	int ret;
@@ -115,11 +171,27 @@ void jdbif_dump_typedef_block(struct jdb_handle* h, jdb_bid_t bid){
 	
 	wprintf(L"Type Defintion Dump{\n");
 	jdbif_dump_typedef_hdr(h, blk.hdr);
-	jdbif_dump_typedef_entries(h, &blk);
+	jdbif_dump_typedef_entries_all(h, &blk);
 	if(blk.entry) free(blk.entry);	
 	wprintf(L"}Type Defintion Dump;\n");
 	
 }
+
+void jdbif_dump_col_typedef_entries_all(struct jdb_handle* h, struct jdb_col_typedef* blk){
+	jdb_bent_t bent;
+	wprintf(L"[slot]-> type_id; column_id\n");
+	for(bent = 0; bent < h->hdr.col_typedef_bent; bent++){
+		//if(blk->entry[bent].type_id != JDB_TYPE_EMPTY){
+			wprintf(L"[%u]-> 0x%02x; %u", bent, blk->entry[bent].type_id,
+				blk->entry[bent].col);
+			if (!(bent % 4))
+				wprintf(L"\n");
+			else
+				wprintf(L"\t");
+		//}			
+	}
+}
+
 
 void jdbif_dump_col_typedef_block(struct jdb_handle* h, jdb_bid_t bid){
 	struct jdb_col_typedef blk;
@@ -141,7 +213,7 @@ void jdbif_dump_col_typedef_block(struct jdb_handle* h, jdb_bid_t bid){
 	
 	wprintf(L"Column-Type Dump{\n");
 	jdbif_dump_col_typedef_hdr(h, blk.hdr);
-	jdbif_dump_col_typedef_entries(h, &blk);
+	jdbif_dump_col_typedef_entries_all(h, &blk);
 	if(blk.entry) free(blk.entry);	
 	wprintf(L"}Column-Type Dump;\n");
 	
@@ -195,14 +267,28 @@ void jdbif_dump_block(struct jdb_handle *h)
 		jdbif_dump_table_def_block(h, bid);
 		break;
 	case JDB_BTYPE_CELLDEF:
-		wprintf(L"Not Implemented!\n");
+		jdbif_dump_cell_def_block(h, bid);
 		break;
 	case JDB_BTYPE_CELL_DATA_VAR:
 		wprintf(L"Not Implemented!\n");
+		jdbif_dump_data_block(h, bid);
 		break;
 	case JDB_BTYPE_CELL_DATA_FIX:
 		wprintf(L"Not Implemented!\n");
-		break;		
+		jdbif_dump_data_block(h, bid);
+		break;
+	case JDB_BTYPE_CELL_DATA_PTR:
+		jdbif_dump_data_ptr_block(h, bid);
+		break;
+	case JDB_BTYPE_INDEX:
+		jdbif_dump_index_block(h, bid);
+		break;
+	case JDB_BTYPE_TABLE_FAV:
+		jdbif_dump_fav_block(h, bid);
+		break;
+	case JDB_BTYPE_TID_INDEX:
+		jdbif_dump_tid_index_block(h, bid);
+		break;
 	default:	
 		wprintf(L"ERROR: block type 0x%02x not understood!\n", btype);
 		break;
@@ -215,7 +301,7 @@ void jdbif_dump_map(struct jdb_handle *h)
 	map = h->map_list.first;
 	while (map) {
 		jdbif_dump_map_hdr(h, map->hdr);
-		jdbif_dump_map_entries(h, map);
+		jdbif_dump_map_entries_all(h, map);
 		map = map->next;
 	}
 }

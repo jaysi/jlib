@@ -1,7 +1,7 @@
 [Project]
 FileName=jdbif.dev
 Name=jdbif
-UnitCount=7
+UnitCount=8
 Type=1
 Ver=1
 ObjFiles=
@@ -103,7 +103,7 @@ BuildCmd=
 Major=0
 Minor=1
 Release=1
-Build=40
+Build=41
 LanguageID=1033
 CharsetID=1252
 CompanyName=
@@ -116,4 +116,14 @@ OriginalFilename=
 ProductName=
 ProductVersion=
 AutoIncBuildNr=1
+
+[Unit8]
+FileName=src\jdbif_data.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
 

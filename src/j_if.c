@@ -70,3 +70,18 @@ int jif_read_file(char *filename, unsigned char **ex_buf,
 
 	return 0;
 }
+
+void jif_dump_bmap_w(uchar* bmap, size_t bmapsize){
+	uchar mask;
+	size_t a, i, end;
+	for(a = 0; a < bmapsize; a++){	
+		mask = (0x01<<7);
+		for (i = 0; i < 8; i++) {
+			if (mask & bmap[a])
+				wprintf(L"1");
+			else
+				wprintf(L"0");
+			mask = mask >> 1;
+		}
+	}
+}
