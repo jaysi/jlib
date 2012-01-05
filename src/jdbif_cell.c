@@ -76,7 +76,7 @@ void jdbif_add_cell(struct jdb_handle* h){
 	uchar* data;
 	uint32_t datalen;
 	uchar data_type;
-	int unsign, ret;
+	int ret;
 	wchar_t yn[2];
 	uchar filename[100];
 
@@ -114,8 +114,7 @@ void jdbif_add_cell(struct jdb_handle* h){
 	wscanf(L"%i", &unsign);
 
 	wprintf(L"creating cell...");
-	ret = jdb_create_cell(h, table_name, col, row, data, datalen, data_type,
-		unsign);
+	ret = jdb_create_cell(h, table_name, col, row, data, datalen, data_type);
 		
 	if(ret < 0){
 		wprintf(L"[FAIL]\n");
@@ -153,6 +152,7 @@ void jdbif_rm_cell(struct jdb_handle* h){
 void jdbif_find_cell(struct jdb_handle* h){
 		
 	wchar_t table_name[100];
+	char filename[J_MAX_FILENAME8];
 	uint32_t col, row;
 	uchar* data;
 	uint32_t datalen;
@@ -169,26 +169,46 @@ void jdbif_find_cell(struct jdb_handle* h){
 	
 	wprintf(L"loading cell...");
 	
-	//ret = jdb_find_cell(h, table_name, col, row, &data, &datalen, &data_type, &unsign);
-	ret = -JE_IMPLEMENT;
+/*
+int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
+		uint32_t col, uint32_t row, uchar** data,
+		uint32_t* datalen, uchar* data_type, int* unsign){
+*/
+	ret = jdb_load_cell(h, table_name, col, row, &data, &datalen, &data_type);	
 	
-	if(ret < 0){
+	if(ret < 0 && ret != -JE_EXISTS){
 		wprintf(L"[FAIL]\n");
 		jif_perr(ret);
 		return;
 	}
 	wprintf(L"[DONE]\n");
 
-	wprintf(L"datalen: %u, datatype: 0x%02x, %ls\n", datalen, data_type, unsign?L"UNSIGNED":L"SIGNED");
+	wprintf(L"datalen: %u, datatype: 0x%02x\n", datalen, data_type);
+	
+	wprintf(L"Data pointer chain: ");
+	jdbif_dump_cell_dptr(cell->dptr);
+	wprintf(L"\n\n");	
 
-	wprintf(L"print data(y/n)?");
+	wprintf(L"print data(y/n/f)?");
 	wscanf(L"%ls", yn);
-	if(yn[0] == L'y'){
-		wprintf(L"-=BEGIN=-\n%s\n-=END=-", data);
+	
+	switch(yn){
+		case L'y':
+			wprintf(L"-=BEGIN=-\n%s\n-=END=-", data);
+			break;
+		case L'f':
+			wprintf(L"filename: ");
+			wscanf(L"%s", filename);
+			ret = jif_write_file(filename, data, datalen);
+						
+			break;
+		default:
+			break;
+				
 	}
 }
 
-void jdbif_list_cell(struct jdb_handle* h){
+void jdbif_list_cells(struct jdb_handle* h){
 	wchar_t table_name[100];
 	int ret;
 	uint32_t col, row, *li_col, *li_row, n, i;
@@ -220,5 +240,53 @@ void jdbif_list_cell(struct jdb_handle* h){
 		free(li_row);
 	}
 	
+}
+
+int jdbif_table_cell(struct jdb_handle *h)
+{
+
+	wchar_t cmd[MAX_CMD];
+	int ret;
+	char jerr[MAX_ERR_STR];
+
+	wprintf
+	    (L"\Cell sub-system, type \'HELP\' to get a list of commands.\n");
+
+ prompt1:
+	jdbif_set_prompt(L"Cell >");
+	jdbif_prompt();
+	wscanf(L"%ls", cmd);
+
+	switch (lookup_cmd(cmd)) {
+	case HELP:
+		jdbif_cell_help();
+		break;
+	case FIND:
+		jdbif_find_cell(h);
+		break;		
+	case LIST:
+		jdbif_list_cells(h);
+		break;
+	case STAT:
+		jdbif_stat_cell(h);
+		break;
+	case ADD:
+		jdbif_add_cell(h);
+		break;
+	case RM:
+		jdbif_rm_cell(h);		
+		break;
+	case EDIT:
+		jdbif_edit_cell(h);
+		break;		
+	case EXIT:
+		return 0;
+	default:
+		wprintf(L"\nCommand not supported, try using \'HELP\'\n");
+		break;
+	}
+	goto prompt1;
+	return 0;
+
 }
 

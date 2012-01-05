@@ -35,8 +35,11 @@ int jif_read_file(char *filename, unsigned char **ex_buf,
 	ssize_t this_read;
 
 	*ex_size = 0UL;
-
+#ifndef _WIN32
 	handle = open(filename, O_RDONLY);
+#else
+	handle = open(filename, O_RDONLY | O_BINARY);
+#endif	
 	if (handle < 0)
 		return -JE_OPEN;
 
@@ -66,10 +69,53 @@ int jif_read_file(char *filename, unsigned char **ex_buf,
 
 	} while (total_read < st.st_size);
 
-	wprintf(L"\nLoaded %u bytes from < %s >\n", *ex_size, filename);
+	close(handle);
+
+	//wprintf(L"\nLoaded %u bytes from < %s >\n", *ex_size, filename);
 
 	return 0;
 }
+
+int jif_write_file(char *filename, unsigned char *ex_buf,
+		  unsigned long ex_size)
+{
+	int handle;
+	struct stat st;
+	int ret;
+	off_t total_write;
+	ssize_t this_write;
+
+	*ex_size = 0UL;
+#ifdef _WIN32
+	handle = open(filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
+#else
+	handle = open(filename, O_RDWR | O_CREAT | O_EXCL, S_IREAD | S_IWRITE);
+#endif	
+	if (handle < 0)
+		return -JE_OPEN;
+
+	total_write = 0UL;
+
+	do {
+
+		this_write =
+		    read(handle, ex_buf + total_write,
+			 ex_size - total_write);
+
+		if (this_write < 0)
+			return -JE_WRITE;
+
+		total_write += this_write;
+
+	} while (total_read < ex_size);
+
+	//wprintf(L"\nLoaded %u bytes from < %s >\n", *ex_size, filename);
+	
+	close(handle);
+
+	return 0;
+}
+
 
 void jif_dump_bmap_w(uchar* bmap, size_t bmapsize){
 	uchar mask;

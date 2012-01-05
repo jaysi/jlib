@@ -269,25 +269,25 @@ void jdbif_dump_block(struct jdb_handle *h)
 	case JDB_BTYPE_CELLDEF:
 		jdbif_dump_cell_def_block(h, bid);
 		break;
-	case JDB_BTYPE_CELL_DATA_VAR:
-		wprintf(L"Not Implemented!\n");
+	case JDB_BTYPE_CELL_DATA_VAR:		
 		jdbif_dump_data_block(h, bid);
 		break;
-	case JDB_BTYPE_CELL_DATA_FIX:
-		wprintf(L"Not Implemented!\n");
+	case JDB_BTYPE_CELL_DATA_FIX:	
 		jdbif_dump_data_block(h, bid);
 		break;
 	case JDB_BTYPE_CELL_DATA_PTR:
-		jdbif_dump_data_ptr_block(h, bid);
+		jdbif_dump_dptr_blk(h, bid);
 		break;
 	case JDB_BTYPE_INDEX:
-		jdbif_dump_index_block(h, bid);
+		wprintf(L"Not Implemented!\n");
+		//jdbif_dump_index_block(h, bid);
 		break;
 	case JDB_BTYPE_TABLE_FAV:
 		jdbif_dump_fav_block(h, bid);
 		break;
 	case JDB_BTYPE_TID_INDEX:
-		jdbif_dump_tid_index_block(h, bid);
+		wprintf(L"Not Implemented!\n");
+		//jdbif_dump_tid_index_block(h, bid);
 		break;
 	default:	
 		wprintf(L"ERROR: block type 0x%02x not understood!\n", btype);

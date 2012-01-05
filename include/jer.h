@@ -85,6 +85,7 @@
 #define JE_TMPUNAV	87	//temporary unavailable
 #define JE_AGAIN	88
 #define JE_TOOLONG	89
+#define JD_NOTSET	90
 
 /*memmory*/
 #define JE_NOMEM	100

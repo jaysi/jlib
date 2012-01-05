@@ -384,6 +384,23 @@ int _jdb_find_typedef(struct jdb_handle *h,
 
 }
 
+int jdb_typedef_flags(struct jdb_handle* h, wchar_t* table_name, jdb_data_t type_id, uchar* flags){
+	struct jdb_table *table;
+	struct jdb_typedef_blk *blk;
+	struct jdb_typedef_blk_entry *entry;
+	int ret;
+
+	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;
+	
+	if((ret = _jdb_find_typedef(h, table, type_id, &blk, &entry)) < 0) return ret;
+	
+	*flags = entry->flags;
+	
+	return 0
+
+		
+}
+
 size_t _jdb_typedef_len(struct jdb_handle * h, struct jdb_table * table,
 			jdb_data_t type_id, jdb_data_t * base_type,
 			size_t * base_len)

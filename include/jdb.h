@@ -69,11 +69,17 @@
 	engine minor 01
 	database format 01 --> fixed 4k blocks
 */
-#define JDB_ENG_MAJOR_VER	0x00
-#define JDB_ENG_MINOR_VER	0x01
-#define JDB_RESERVED_VER	0x00
-#define JDB_FORMAT_VER	0x01
-#define JDB_VER		0x00010001
+#define JDB_ENG_MAJOR_VER	0x00000000
+#define JDB_ENG_MINOR_VER	0x00010000
+#define JDB_RESERVED_VER	0x00000000
+#define JDB_FORMAT_VER		0x00000001
+
+#define JDB_ENG_MAJOR_VER_MASK	0xff000000
+#define JDB_ENG_MINOR_VER_MASK	0x00ff0000
+#define JDB_RESERVED_VER_MASK	0x0000ff00
+#define JDB_FORMAT_VER_MASK	0x000000ff
+
+#define JDB_VER			(JDB_ENG_MAJOR_VER | JDB_ENG_MINOR_VER | JDB_RESERVED_VER | JDB_FORMAT_VER)
 
 /*				limits					*/
 #define JDB_MAX_BSIZE		0xffff
@@ -85,6 +91,7 @@
 #define JDB_ID_EMPTY		0x00000000
 #define JDB_BENT_INVAL		0xffff
 #define JDB_MAX_TYPE_SIZE	1024
+//#define JDB_MAX_TABLE_NAME	depends on blocksize...
 
 /*
 	Configuration
@@ -231,6 +238,8 @@ extern "C" {
 			    uchar base, uint32_t len, uchar flags);
 	int jdb_rm_typedef(struct jdb_handle *h,
 			   wchar_t* table_name, uchar type_id);
+	int jdb_typedef_flags(	struct jdb_handle* h, wchar_t* table_name,
+				jdb_data_t type_id, uchar* flags);
 	uchar jdb_find_col_type(struct jdb_handle *h,
 				wchar_t* table_name, uint32_t col);
 	int jdb_assign_col_type(struct jdb_handle *h,
@@ -245,10 +254,10 @@ extern "C" {
 	int jdb_create_cell(struct jdb_handle *h, wchar_t * table,
 			    uint32_t col, uint32_t row,
 			    uchar * data, uint32_t datalen,
-			    uchar data_type, int unsign);
+			    uchar data_type);
 	int jdb_load_cell(struct jdb_handle *h, wchar_t * table,
 			uint32_t col, uint32_t row, uchar** data,
-			uint32_t* datalen, uchar* data_type, int* unsign);
+			uint32_t* datalen, uchar* data_type);
 	int jdb_rm_cell(struct jdb_handle* h, wchar_t * table,
 			uint32_t col, uint32_t row);
 	int jdb_update_cell(struct jdb_handle *h, wchar_t * table,
@@ -258,7 +267,7 @@ extern "C" {
 			    					//by this call!
 	int jdb_find_cell(struct jdb_handle* h, wchar_t * table,
 			uchar* data, uint32_t datalen, uchar data_type,
-			int unsign, uint16_t flags, uint32_t* col, uint32_t* row,
+			uint16_t flags, uint32_t* col, uint32_t* row,
 			uint32_t* n);
 	int jdb_list_cells(struct jdb_handle* h, wchar_t* table_name,
 			uint32_t col, uint32_t row,
@@ -301,6 +310,11 @@ extern "C" {
 				uint32_t str_len, uchar* str);
 	int jdb_list(	struct jdb_handle* h, struct jdb_table* table,
  	    		struct jdb_filter* filter, struct jdb_rowset* rowset);
+ 	    		
+/*
+	info
+*/
+	size_t jdb_max_table_name_size(struct jdb_handle* h);
 	
 #ifdef __cplusplus
 }

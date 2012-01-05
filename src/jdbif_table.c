@@ -17,6 +17,7 @@ void jdbif_table_help()
 	wprintf(L"\tREN\tRename a table\n");	
 	wprintf(L"\tOPEN\tOpen table\n");
 	wprintf(L"\tTYPE\tType operation sub-system\n");
+	wprintf(L"\tCELL\tCell management sub-system\n");
 	wprintf(L"\tSYNC\tSync table\n");
 	wprintf(L"\tSYNCALL\tSync all tables\n");
 	wprintf(L"\tCLOSE\tClose table\n");
@@ -307,7 +308,10 @@ int jdbif_table(struct jdb_handle *h)
 	case TYPE:
 		//wprintf(L"Not Implemented Now!\n");
 		jdbif_table_type(h);
-		break;			
+		break;
+	case CELL:
+		jdbif_table_cell(h);
+		break;		
 	case EXIT:
 		return 0;
 	default:

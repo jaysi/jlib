@@ -38,7 +38,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 		 uint32_t nrows, uint32_t ncols, uchar flags, uint16_t indexes)
 {	
 
-	struct jdb_table *table;
+	struct jdb_table *table;	
 
 	jdb_tid_t tid;
 
@@ -126,12 +126,9 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	table->main.hdr.flags = flags;
 
-	table->main.hdr.indexes = indexes;
+	table->main.hdr.indexes = indexes;	
 
-	table->main.hdr.namelen =
-	    wtojcs_len(name,
-		       h->hdr.blocksize -
-		       sizeof(struct jdb_table_def_blk_hdr) - 1);
+	table->main.hdr.namelen = namelen;
 
 	table->main.name = (wchar_t *) malloc(WBYTES(name));
 

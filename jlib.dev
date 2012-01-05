@@ -1,7 +1,7 @@
 [Project]
 FileName=jlib.dev
 Name=jlib
-UnitCount=60
+UnitCount=61
 Type=3
 Ver=1
 ObjFiles=
@@ -578,9 +578,9 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit61]
-FileName=src\ecc.c
+FileName=include\jconst.h
 CompileCpp=0
-Folder=crypto
+Folder=jlib
 Compile=1
 Link=1
 Priority=1000
