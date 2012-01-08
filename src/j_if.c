@@ -85,7 +85,7 @@ int jif_write_file(char *filename, unsigned char *ex_buf,
 	off_t total_write;
 	ssize_t this_write;
 
-	*ex_size = 0UL;
+	ex_size = 0UL;
 #ifdef _WIN32
 	handle = open(filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
 #else
@@ -107,7 +107,7 @@ int jif_write_file(char *filename, unsigned char *ex_buf,
 
 		total_write += this_write;
 
-	} while (total_read < ex_size);
+	} while (total_write < ex_size);
 
 	//wprintf(L"\nLoaded %u bytes from < %s >\n", *ex_size, filename);
 	

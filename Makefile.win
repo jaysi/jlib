@@ -5,8 +5,8 @@ CPP  = g++.exe -D__DEBUG__
 CC   = gcc.exe -D__DEBUG__
 WINDRES = windres.exe
 RES  = jdbif_private.res
-OBJ  = src/j_if.o src/jdbif.o src/jdbif_cell.o src/jdbif_debug.o src/jdbif_table.o src/jdbif_type.o $(RES)
-LINKOBJ  = src/j_if.o src/jdbif.o src/jdbif_cell.o src/jdbif_debug.o src/jdbif_table.o src/jdbif_type.o $(RES)
+OBJ  = src/j_if.o src/jdbif.o src/jdbif_cell.o src/jdbif_debug.o src/jdbif_table.o src/jdbif_type.o src/jdbif_data.o $(RES)
+LINKOBJ  = src/j_if.o src/jdbif.o src/jdbif_cell.o src/jdbif_debug.o src/jdbif_table.o src/jdbif_type.o src/jdbif_data.o $(RES)
 LIBS =  -L"C:/Dev-Cpp/lib" -L"J:/comp/dev/src/jlib" libjlib.a  -g3 
 INCS =  -I"C:/Dev-Cpp/include"  -I"J:/comp/dev/src/jlib/include" 
 CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"J:/comp/dev/src/jlib/include" 
@@ -43,6 +43,9 @@ src/jdbif_table.o: src/jdbif_table.c
 
 src/jdbif_type.o: src/jdbif_type.c
 	$(CC) -c src/jdbif_type.c -o src/jdbif_type.o $(CFLAGS)
+
+src/jdbif_data.o: src/jdbif_data.c
+	$(CC) -c src/jdbif_data.c -o src/jdbif_data.o $(CFLAGS)
 
 jdbif_private.res: jdbif_private.rc 
 	$(WINDRES) -i jdbif_private.rc --input-format=rc -o jdbif_private.res -O coff 

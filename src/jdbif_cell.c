@@ -110,8 +110,6 @@ void jdbif_add_cell(struct jdb_handle* h){
 	wprintf(L"data_type: ");
 	wscanf(L"%i", &ret);
 	data_type = (uchar)ret;
-	wprintf(L"unsigned (0 or else)? ");
-	wscanf(L"%i", &unsign);
 
 	wprintf(L"creating cell...");
 	ret = jdb_create_cell(h, table_name, col, row, data, datalen, data_type);
@@ -159,6 +157,7 @@ void jdbif_find_cell(struct jdb_handle* h){
 	uchar data_type;	
 	int ret, unsign;
 	wchar_t yn[2];
+	struct jdb_cell* cell;
 	
 	wprintf(L"table name: ");
 	wscanf(L"%ls", table_name);
@@ -182,17 +181,13 @@ int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
 		return;
 	}
 	wprintf(L"[DONE]\n");
-
+	
 	wprintf(L"datalen: %u, datatype: 0x%02x\n", datalen, data_type);
 	
-	wprintf(L"Data pointer chain: ");
-	jdbif_dump_cell_dptr(cell->dptr);
-	wprintf(L"\n\n");	
-
 	wprintf(L"print data(y/n/f)?");
 	wscanf(L"%ls", yn);
 	
-	switch(yn){
+	switch(yn[0]){
 		case L'y':
 			wprintf(L"-=BEGIN=-\n%s\n-=END=-", data);
 			break;
@@ -250,7 +245,7 @@ int jdbif_table_cell(struct jdb_handle *h)
 	char jerr[MAX_ERR_STR];
 
 	wprintf
-	    (L"\Cell sub-system, type \'HELP\' to get a list of commands.\n");
+	    (L"\tCell sub-system, type \'HELP\' to get a list of commands.\n");
 
  prompt1:
 	jdbif_set_prompt(L"Cell >");
@@ -268,7 +263,7 @@ int jdbif_table_cell(struct jdb_handle *h)
 		jdbif_list_cells(h);
 		break;
 	case STAT:
-		jdbif_stat_cell(h);
+		//jdbif_stat_cell(h);
 		break;
 	case ADD:
 		jdbif_add_cell(h);
@@ -277,7 +272,7 @@ int jdbif_table_cell(struct jdb_handle *h)
 		jdbif_rm_cell(h);		
 		break;
 	case EDIT:
-		jdbif_edit_cell(h);
+		//jdbif_edit_cell(h);
 		break;		
 	case EXIT:
 		return 0;

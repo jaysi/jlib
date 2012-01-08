@@ -9,6 +9,7 @@
 #include "jhash.h"
 #include "jbits.h"
 #include "debug.h"
+#include "jtime.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

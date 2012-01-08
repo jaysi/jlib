@@ -54,31 +54,32 @@ void jdbif_print_data(uchar* buf, size_t bufsize, jdb_data_t base){
 			break;
 		default:
 			wprintf(L"Bad Type: 0x%02x", base);
-			default:	
+			break;
 					
 	}
 	wprintf(L"\n} Data;\n");
 }
 
-void jdbif_dump_data_blk_hdr(struct jdb_handle* h, struct jdb_data_blk_hdr hdr){
+void jdbif_dump_data_blk_hdr(struct jdb_handle* h, struct jdb_cell_data_blk_hdr hdr){
 	wprintf
 	    (L"\tType: 0x%02x\tFlags: 0x%02x\tDataType: 0x%02x\tCRC32: 0x%04x\n",
 	     hdr.type, hdr.flags, hdr.dtype, hdr.crc32);			
 }
 
-void jdbif_dump_data_blk_info(struct jdb_data_blk* blk){
+void jdbif_dump_data_blk_info(struct jdb_cell_data_blk* blk){
 	wprintf(L"\tEntrySize: %u\tBaseSize: %u\tBitmapSize: %u\tNoOfEntries: %u\n\tDataType: 0x%02x\tBaseType: 0x%02x\tMaxEntries: %u\n",
 		blk->entsize, blk->base_len, blk->bmapsize, blk->nent, blk->data_type, blk->base_type, blk->maxent);
 }
 
-void jdbif_dump_data_blk_bmap(struct jdb_data_blk* blk){
+void jdbif_dump_data_blk_bmap(struct jdb_cell_data_blk* blk){
 	jif_dump_bmap_w(blk->bitmap, blk->bmapsize);
 }
 
 void jdbif_dump_data_block(struct jdb_handle* h, jdb_bid_t bid){
-	struct jdb_data_blk blk;
+	struct jdb_cell_data_blk blk;
 	int ret;
 	struct jdb_map_blk_entry* m_ent;
+	struct jdb_table* table;
 	
 	blk.bid = bid;
 	
@@ -86,6 +87,12 @@ void jdbif_dump_data_block(struct jdb_handle* h, jdb_bid_t bid){
 	if(!m_ent) {
 		wprintf(L"No Entry\n");
 		return;
+	}
+	
+	ret = _jdb_find_table_by_tid(h, m_ent->tid, &table);
+	if(ret < 0){
+		wprintf(L"could not find table %u, eno = %i\n", m_ent->tid, ret);
+		return;	
 	}
 
 	ret = _jdb_read_data_blk(h, table, &blk, m_ent->dtype);
@@ -95,22 +102,16 @@ void jdbif_dump_data_block(struct jdb_handle* h, jdb_bid_t bid){
 		return;
 
 	} else
-		wprintf(L"\t[DONE]\n");		
-	return 0;
+		wprintf(L"\t[DONE]\n");	
 	
 	wprintf(L"Data Block{\n");
-	jdbif_dump_data_blk_hdr(h, blk->hdr);
-	jdbif_dump_data_blk_info(blk);
-	jdbif_dump_data_blk_bmap(blk);
-	jdbif_print_data(blk->datapool, blk->bufsize, blk->base_type);
+	jdbif_dump_data_blk_hdr(h, blk.hdr);
+	jdbif_dump_data_blk_info(&blk);
+	jdbif_dump_data_blk_bmap(&blk);
+	jdbif_print_data(blk.datapool, blk.maxent*blk.entsize, blk.base_type);
 	wprintf(L"} Data Block;\n");
 }
 
-void jdbif_dump_data_blk_hdr(struct jdb_handle* h, struct jdb_data_blk_hdr hdr){
-	wprintf
-	    (L"\tType: 0x%02x\tFlags: 0x%02x\tDataType: 0x%02x\tCRC32: 0x%04x\n",
-	     hdr.type, hdr.flags, hdr.dtype, hdr.crc32);			
-}
 /*
 void jdbif_dump_data_ptr_chain(struct jdb_cell_data_ptr_blk_entry *first){
 	struct jdb_cell_data_ptr_blk_entry *dptr;
@@ -148,10 +149,3 @@ void jdbif_dump_data_ptr_block(struct jdb_handle* h, jdb_bid_t bid){
 	
 }
 */
-
-void jdbif_dump_fav_blk_hdr(struct jdb_handle* h, struct jdb_fav_blk_hdr hdr){
-	wprintf
-	    (L"\tType: 0x%02x\tFlags: 0x%02x\tCRC32: 0x%04x\n",
-	     hdr.type, hdr.flags, hdr.crc32);			
-}
-

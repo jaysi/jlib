@@ -228,9 +228,9 @@ static inline void _jdb_copy_conf_to_hdr(struct jdb_handle *h)
 int jdb_fstat(wchar_t * wfilename, wchar_t * key, uint16_t mode)
 {
 
-	char filename[MAX_PATHNAME];
+	char filename[J_MAX_PATHNAME8];
 
-	wcstombs(filename, wfilename, MAX_PATHNAME);
+	wcstombs(filename, wfilename, J_MAX_PATHNAME8);
 
 	if (mode & JDB_FSTAT_EXIST) {
 		if (access(filename, F_OK))
@@ -245,12 +245,12 @@ int jdb_fstat(wchar_t * wfilename, wchar_t * key, uint16_t mode)
 int _jdb_create(struct jdb_handle *h)
 {
 	int ret;
-	char filename[MAX_PATHNAME];
+	char filename[J_MAX_PATHNAME8];
 
 	_wdeb_startup(L"called, filename: %ls, flags: 0x%04x", h->conf.filename,
 		      h->conf.flags);
 
-	wcstombs(filename, h->conf.filename, MAX_PATHNAME);
+	wcstombs(filename, h->conf.filename, J_MAX_PATHNAME8);
 #ifdef _WIN32	
 	h->fd = open(filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
 #else
@@ -303,12 +303,12 @@ int _jdb_open(struct jdb_handle *h)
 {
 	char pwhash[32];
 	int ret;
-	char filename[MAX_PATHNAME];
+	char filename[J_MAX_PATHNAME8];
 
 	_wdeb_startup(L"called, filename: %ls, flags: 0x%04x", h->conf.filename,
 		      h->conf.flags);
 
-	wcstombs(filename, h->conf.filename, MAX_PATHNAME);
+	wcstombs(filename, h->conf.filename, J_MAX_PATHNAME8);
 #ifdef _WIN32	
 	h->fd = open(filename, O_RDWR | O_BINARY);
 #else
@@ -378,7 +378,7 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 	if (h->fd != -1)
 		return -JE_ISOPEN;
 
-//      wcstombs(filename, conf->filename, MAX_PATHNAME);       
+//      wcstombs(filename, conf->filename, J_MAX_PATHNAME8);       
 //      ret = access(filename, F_OK);
 
 

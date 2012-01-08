@@ -13,6 +13,49 @@
 #define VER	"0.0.1"
 #define PROMPT_LEN	20
 
+void jdbif_dump_fav_blk_hdr(struct jdb_handle* h, struct jdb_fav_blk_hdr hdr){
+	wprintf
+	    (L"\tType: 0x%02x\tFlags: 0x%02x\tCRC32: 0x%04x\n",
+	     hdr.type, hdr.flags, hdr.crc32);			
+}
+
+void jdbif_dump_fav_blk_entries(struct jdb_handle* h, struct jdb_fav_blk* blk){
+	jdb_bent_t i;
+	wprintf(L"\t[slot]-> BID; HITS;\n");
+	for(i = 0; i < h->hdr.fav_bent; i++){
+		wprintf(L"\t[%u]-> %u:%u");
+		if(!(i%4)) wprintf(L"\n");
+		else wprintf(L"\t");
+	}
+}
+
+void jdbif_dump_fav_blk(struct jdb_handle* h, jdb_bid_t bid){
+	struct jdb_fav_blk blk;
+	int ret;
+	
+	blk.bid = bid;
+	
+	wprintf(L"reading fav block...");
+	
+	ret = _jdb_read_fav_blk(h, &blk);
+	
+	if (ret < 0) {
+		wprintf(L"\t[FAIL]\n");
+		jif_perr(ret);		
+		return;
+
+	} else
+		wprintf(L"\t[DONE]\n");
+	
+	wprintf(L"Fav Block dump{\n");
+	jdbif_dump_fav_blk_hdr(h, blk.hdr);
+	jdbif_dump_fav_blk_entries(h, &blk);
+	free(blk.entry);
+	wprintf(L"}Fav Block dump;\n");
+	
+	
+}
+
 void jdbif_dump_map_hdr(struct jdb_handle *h, struct jdb_map_blk_hdr hdr)
 {
 	wprintf
@@ -66,7 +109,7 @@ void jdbif_dump_map_block(struct jdb_handle *h, jdb_bid_t bid)
 
 	jdbif_dump_map_hdr(h, map.hdr);
 
-	jdbif_dump_map_entries(h, &map);
+	jdbif_dump_map_entries_all(h, &map);
 	
 	free(map.entry);
 
@@ -95,7 +138,7 @@ void jdbif_dump_table_def_block(struct jdb_handle* h, jdb_bid_t bid){
 	wprintf(L"}Table Defintion Dump;\n");
 }
 
-void jdbif_dump_celldef_entry(struct jdb_handle* h, struct jdb_cell_blk_entry* celldef){
+void jdbif_dump_celldef_entry(struct jdb_handle* h, struct jdb_celldef_blk_entry* celldef){
 	wprintf(L"R: %u\tC: %u\tDCRC: 0x%04x\tDTYP: 0x%02x\nDLEN: %u\tDPTR: %u\tDPTRE: %u\nACC: %i-%i-%i %i:%i:%i\n"
 	, celldef->row, celldef->col,
 	celldef->data_crc32, celldef->data_type,
@@ -283,7 +326,7 @@ void jdbif_dump_block(struct jdb_handle *h)
 		//jdbif_dump_index_block(h, bid);
 		break;
 	case JDB_BTYPE_TABLE_FAV:
-		jdbif_dump_fav_block(h, bid);
+		jdbif_dump_fav_blk(h, bid);
 		break;
 	case JDB_BTYPE_TID_INDEX:
 		wprintf(L"Not Implemented!\n");

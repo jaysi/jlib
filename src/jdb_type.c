@@ -396,7 +396,7 @@ int jdb_typedef_flags(struct jdb_handle* h, wchar_t* table_name, jdb_data_t type
 	
 	*flags = entry->flags;
 	
-	return 0
+	return 0;
 
 		
 }

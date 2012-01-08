@@ -667,3 +667,26 @@ int _jdb_table_handle(struct jdb_handle* h, wchar_t* name, struct jdb_table** ta
 	return -JE_NOTFOUND;
 
 }
+
+int _jdb_find_table_by_tid(struct jdb_handle* h, jdb_tid_t tid, struct jdb_table** table){
+
+	if (h->magic != JDB_MAGIC)
+
+		return -JE_NOINIT;
+
+	if (h->fd == -1)
+
+		return -JE_NOOPEN;
+		
+	for(*table = h->table_list.first; *table; *table = (*table)->next){
+		if(tid == (*table)->main.hdr.tid) return 0;
+	}
+	
+	if (_jdb_find_first_map_match
+	    (h, 0, 0, tid, 0, JDB_MAP_CMP_TID) != JDB_ID_INVAL)
+
+		return -JE_NOOPEN;	
+	
+	return -JE_NOTFOUND;
+	
+}
