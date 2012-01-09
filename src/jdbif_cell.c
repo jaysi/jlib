@@ -224,7 +224,7 @@ void jdbif_list_cells(struct jdb_handle* h){
 	}
 	wprintf(L"[DONE]\n");
 	wprintf(L"found %u matches, print in [col, row] order.\n", n);
-	for(i = 0; i <= n; i++){
+	for(i = 0; i < n; i++){
 		wprintf(L"[%u, %u]", li_col[i], li_row[i]);
 		if(i && !(i%4)) wprintf(L"\n");
 		else wprintf(L"\t");

@@ -98,8 +98,8 @@ int jdbif_stat(struct jdb_handle *h)
 int jdbif_open(struct jdb_handle *h)
 {
 	int ret;
-	wchar_t filename[MAX_PATHNAME];
-	wchar_t pass[MAX_PASS];
+	wchar_t filename[J_MAX_PATHNAME8];
+	wchar_t pass[J_MAX_PASSWORD8];
 	uint16_t flags;
 	wchar_t flag_str[16];
 
@@ -122,8 +122,8 @@ int jdbif_open(struct jdb_handle *h)
 int jdbif_open2(struct jdb_handle *h)
 {
 	int ret;
-	wchar_t filename[MAX_PATHNAME];
-	wchar_t pass[MAX_PASS];
+	wchar_t filename[J_MAX_PATHNAME8];
+	wchar_t pass[J_MAX_PASSWORD8];
 	uint16_t flags;
 	wchar_t flag_str[16];
 
@@ -198,8 +198,8 @@ int main(int argc, char *argv[])
 	wchar_t cmd[MAX_CMD];
 	int ret;
 	char jerr[MAX_ERR_STR];
-	wchar_t dbname[MAX_PATHNAME];
-	wchar_t pass[MAX_PASS];
+	wchar_t dbname[J_MAX_PATHNAME8];
+	wchar_t pass[J_MAX_PASSWORD8];
 	struct jdb_handle h;
 
 	setlocale(LC_ALL, "");
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 	if (argc > 2) {
 		/*
 		   jcstow((uchar*)argv[1], username, MAX_UNAME);
-		   jcstow((uchar*)argv[2], pass, MAX_PASS);
+		   jcstow((uchar*)argv[2], pass, J_MAX_PASSWORD8);
 		   wprintf(L"connecting localhost:49999 as %ls...", username);
 		   ret = jn_connect(&conn, "localhost", "49999", username, pass);
 		 */

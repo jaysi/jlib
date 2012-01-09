@@ -4,6 +4,7 @@
 #define _wdeb_load _wdeb
 #define _wdeb_data_ptr _wdeb
 #define _wdeb_add _wdeb
+#define _wdeb_find _wdeb
 
 size_t _jdb_base_dtype_size(uchar dtype)
 {
@@ -24,6 +25,8 @@ size_t _jdb_base_dtype_size(uchar dtype)
 #define JDB_TYPE_RAW	0x0a	//raw data
 #define JDB_TYPE_NULL	0x0f	//null type, also shows the reserved area for base-types.
 */
+
+	_wdeb_find(L"finding size of type 0x%02x", dtype);
 
 	switch (dtype) {
 
@@ -364,6 +367,8 @@ int _jdb_find_typedef(struct jdb_handle *h,
 
 	jdb_bent_t bent;
 
+	_wdeb_find(L"finding type 0x%02x", type_id);
+
 	for (*blk = table->typedef_list.first; *blk; *blk = (*blk)->next) {
 
 		for (bent = 0; bent < h->hdr.typedef_bent; bent++) {
@@ -379,6 +384,8 @@ int _jdb_find_typedef(struct jdb_handle *h,
 		}
 
 	}
+	
+	_wdeb_find(L"not found");
 
 	return -JE_NOTFOUND;
 

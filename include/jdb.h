@@ -22,9 +22,9 @@
 
 /*				stat modes				*/
 #define JDB_FSTAT_EXIST	0x0001	//check for existance
-#define JDB_FSTAT_READ		//check for readability
-#define JDB_FSTAT_WRITE		//check for writablity
-#define JDB_FSTAT_STRUCT	//check db structure, a key is required
+#define JDB_FSTAT_READ		//check for readability, NA
+#define JDB_FSTAT_WRITE		//check for writablity, NA
+#define JDB_FSTAT_STRUCT	//check db structure, a key is required, NA
 
 /*				types					*/
 /*			DEFINITION MOVED TO jdb_intern.h		*/

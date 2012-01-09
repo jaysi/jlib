@@ -2,6 +2,7 @@
 
 #define _wdeb_alloc _wdeb
 #define _wdeb_data_ptr	_wdeb
+#define _wdeb_add _wdeb
 
 int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 				uchar dtype, uchar flags){
@@ -133,6 +134,8 @@ int _jdb_add_fdata(struct jdb_handle *h, struct jdb_table *table, uchar dtype,
 	size_t dsize, base_len;
 	uchar base_type;
 	int ret;
+	
+	_wdeb_add(L"called.");
 
 	if ((dsize = _jdb_data_len(	h, table, dtype, &base_type,
 					&base_len)) == JDB_SIZE_INVAL)
@@ -647,7 +650,10 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 	   else try to detect type
 	   else use RAW
 	   
-	 */
+	*/
+	
+	_wdeb_add(L"called.");
+	 
 	nchunks = datalen / typedef_entry->len;
 	if (datalen % typedef_entry->len)
 		nchunks++;					 
@@ -841,7 +847,7 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry, *dptr_last;
 	size_t pos;
 	struct jdb_cell_data_blk* blk;
-	size_t copysize, copypos;
+	size_t copysize, copypos;	
 
 	ret = _jdb_load_dptr_chain(h, table, cell, &dptr_list);
 	if(ret < 0) return ret;

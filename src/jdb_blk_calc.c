@@ -1,5 +1,8 @@
 #include "jdb.h"
 
+#define _wdeb_calc	_wdeb
+#define _wdeb_find	_wdeb
+
 jdb_bent_t _jdb_calc_bent(jdb_bsize_t blk_size, uint16_t ent_size,
 			  uint16_t blk_hdr_size, uint16_t * pad)
 {
@@ -32,8 +35,9 @@ size_t _jdb_data_len(struct jdb_handle *h, struct jdb_table * table,
 
 	size_t ret;
 
-	if (dtype >= JDB_TYPE_FIXED_BASE_START
-	    && dtype >= JDB_TYPE_FIXED_BASE_END) {
+	if (dtype <= JDB_TYPE_NULL) {
+			
+		_wdeb_find(L"base type 0x%02x...", dtype);
 
 		ret = _jdb_base_dtype_size(dtype);
 
@@ -44,7 +48,7 @@ size_t _jdb_data_len(struct jdb_handle *h, struct jdb_table * table,
 		return ret;
 
 	} else {
-
+		_wdeb_find(L"extended type 0x%02x.", dtype);
 		return _jdb_typedef_len(h, table, dtype, base_type, base_len);
 
 	}
@@ -63,7 +67,9 @@ int _jdb_calc_data(jdb_bsize_t blocksize, jdb_bsize_t entsize,
 
 	if ((*bmapsize + (*bent) * entsize +
 	     sizeof(struct jdb_cell_data_blk_hdr)) > blocksize)
-		return -JE_FORBID;
+		return -JE_FORBID;	
+	
+	_wdeb_calc(L"blocksize = %u, entsize = %u => blockentry = %u, bitmapsize = %u", blocksize, entsize, *bent, *bmapsize);
 
 	return 0;
 

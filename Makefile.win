@@ -1,51 +1,145 @@
-# Project: jdbif
+# Project: jlib
 # Makefile created by Dev-C++ 4.9.9.2
 
 CPP  = g++.exe -D__DEBUG__
 CC   = gcc.exe -D__DEBUG__
 WINDRES = windres.exe
-RES  = jdbif_private.res
-OBJ  = src/j_if.o src/jdbif.o src/jdbif_cell.o src/jdbif_debug.o src/jdbif_table.o src/jdbif_type.o src/jdbif_data.o $(RES)
-LINKOBJ  = src/j_if.o src/jdbif.o src/jdbif_cell.o src/jdbif_debug.o src/jdbif_table.o src/jdbif_type.o src/jdbif_data.o $(RES)
-LIBS =  -L"C:/Dev-Cpp/lib" -L"J:/comp/dev/src/jlib" libjlib.a  -g3 
+RES  = jlib_private.res
+OBJ  = src/dllmain.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_wr_thread.o src/jss.o src/hardio.o src/jcs.o src/aes.o src/crc.o src/des.o src/ecc.o src/jhash.o src/jrand.o src/rc4.o src/sha256.o src/debug.o src/jer.o src/jtable.o src/jpack.o src/jdb_undo.o src/memmem.o $(RES)
+LINKOBJ  = src/dllmain.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_wr_thread.o src/jss.o src/hardio.o src/jcs.o src/aes.o src/crc.o src/des.o src/ecc.o src/jhash.o src/jrand.o src/rc4.o src/sha256.o src/debug.o src/jer.o src/jtable.o src/jpack.o src/jdb_undo.o src/memmem.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib" --export-all-symbols --add-stdcall-alias C:/Dev-Cpp/lib/libpthreadGC2.a C:/Dev-Cpp/lib/libws2_32.a  -g3 
 INCS =  -I"C:/Dev-Cpp/include"  -I"J:/comp/dev/src/jlib/include" 
 CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"J:/comp/dev/src/jlib/include" 
-BIN  = jdbif.exe
-CXXFLAGS = $(CXXINCS)   -O1 -g3
-CFLAGS = $(INCS)   -O1 -g3
+BIN  = jlib.dll
+CXXFLAGS = $(CXXINCS) -DBUILDING_DLL=1   -O1 -g3
+CFLAGS = $(INCS) -DBUILDING_DLL=1   -O1 -g3
 RM = rm -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: all-before jdbif.exe all-after
+all: all-before jlib.dll all-after
 
 
 clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
-$(BIN): $(OBJ)
-	$(CC) $(LINKOBJ) -o "jdbif.exe" $(LIBS)
+DLLWRAP=dllwrap.exe
+DEFFILE=libjlib.def
+STATICLIB=libjlib.a
 
-src/j_if.o: src/j_if.c
-	$(CC) -c src/j_if.c -o src/j_if.o $(CFLAGS)
+$(BIN): $(LINKOBJ)
+	$(DLLWRAP) --output-def $(DEFFILE) --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)
 
-src/jdbif.o: src/jdbif.c
-	$(CC) -c src/jdbif.c -o src/jdbif.o $(CFLAGS)
+src/dllmain.o: src/dllmain.c
+	$(CC) -c src/dllmain.c -o src/dllmain.o $(CFLAGS)
 
-src/jdbif_cell.o: src/jdbif_cell.c
-	$(CC) -c src/jdbif_cell.c -o src/jdbif_cell.o $(CFLAGS)
+src/jdb.o: src/jdb.c
+	$(CC) -c src/jdb.c -o src/jdb.o $(CFLAGS)
 
-src/jdbif_debug.o: src/jdbif_debug.c
-	$(CC) -c src/jdbif_debug.c -o src/jdbif_debug.o $(CFLAGS)
+src/jdb_blk_calc.o: src/jdb_blk_calc.c
+	$(CC) -c src/jdb_blk_calc.c -o src/jdb_blk_calc.o $(CFLAGS)
 
-src/jdbif_table.o: src/jdbif_table.c
-	$(CC) -c src/jdbif_table.c -o src/jdbif_table.o $(CFLAGS)
+src/jdb_block.o: src/jdb_block.c
+	$(CC) -c src/jdb_block.c -o src/jdb_block.o $(CFLAGS)
 
-src/jdbif_type.o: src/jdbif_type.c
-	$(CC) -c src/jdbif_type.c -o src/jdbif_type.o $(CFLAGS)
+src/jdb_cell.o: src/jdb_cell.c
+	$(CC) -c src/jdb_cell.c -o src/jdb_cell.o $(CFLAGS)
 
-src/jdbif_data.o: src/jdbif_data.c
-	$(CC) -c src/jdbif_data.c -o src/jdbif_data.o $(CFLAGS)
+src/jdb_data.o: src/jdb_data.c
+	$(CC) -c src/jdb_data.c -o src/jdb_data.o $(CFLAGS)
 
-jdbif_private.res: jdbif_private.rc 
-	$(WINDRES) -i jdbif_private.rc --input-format=rc -o jdbif_private.res -O coff 
+src/jdb_data_ptr.o: src/jdb_data_ptr.c
+	$(CC) -c src/jdb_data_ptr.c -o src/jdb_data_ptr.o $(CFLAGS)
+
+src/jdb_fav.o: src/jdb_fav.c
+	$(CC) -c src/jdb_fav.c -o src/jdb_fav.o $(CFLAGS)
+
+src/jdb_hash.o: src/jdb_hash.c
+	$(CC) -c src/jdb_hash.c -o src/jdb_hash.o $(CFLAGS)
+
+src/jdb_hdr.o: src/jdb_hdr.c
+	$(CC) -c src/jdb_hdr.c -o src/jdb_hdr.o $(CFLAGS)
+
+src/jdb_index.o: src/jdb_index.c
+	$(CC) -c src/jdb_index.c -o src/jdb_index.o $(CFLAGS)
+
+src/jdb_io.o: src/jdb_io.c
+	$(CC) -c src/jdb_io.c -o src/jdb_io.o $(CFLAGS)
+
+src/jdb_jrnl.o: src/jdb_jrnl.c
+	$(CC) -c src/jdb_jrnl.c -o src/jdb_jrnl.o $(CFLAGS)
+
+src/jdb_list.o: src/jdb_list.c
+	$(CC) -c src/jdb_list.c -o src/jdb_list.o $(CFLAGS)
+
+src/jdb_map.o: src/jdb_map.c
+	$(CC) -c src/jdb_map.c -o src/jdb_map.o $(CFLAGS)
+
+src/jdb_mem.o: src/jdb_mem.c
+	$(CC) -c src/jdb_mem.c -o src/jdb_mem.o $(CFLAGS)
+
+src/jdb_pack.o: src/jdb_pack.c
+	$(CC) -c src/jdb_pack.c -o src/jdb_pack.o $(CFLAGS)
+
+src/jdb_table.o: src/jdb_table.c
+	$(CC) -c src/jdb_table.c -o src/jdb_table.o $(CFLAGS)
+
+src/jdb_type.o: src/jdb_type.c
+	$(CC) -c src/jdb_type.c -o src/jdb_type.o $(CFLAGS)
+
+src/jdb_wr_thread.o: src/jdb_wr_thread.c
+	$(CC) -c src/jdb_wr_thread.c -o src/jdb_wr_thread.o $(CFLAGS)
+
+src/jss.o: src/jss.c
+	$(CC) -c src/jss.c -o src/jss.o $(CFLAGS)
+
+src/hardio.o: src/hardio.c
+	$(CC) -c src/hardio.c -o src/hardio.o $(CFLAGS)
+
+src/jcs.o: src/jcs.c
+	$(CC) -c src/jcs.c -o src/jcs.o $(CFLAGS)
+
+src/aes.o: src/aes.c
+	$(CC) -c src/aes.c -o src/aes.o $(CFLAGS)
+
+src/crc.o: src/crc.c
+	$(CC) -c src/crc.c -o src/crc.o $(CFLAGS)
+
+src/des.o: src/des.c
+	$(CC) -c src/des.c -o src/des.o $(CFLAGS)
+
+src/ecc.o: src/ecc.c
+	$(CC) -c src/ecc.c -o src/ecc.o $(CFLAGS)
+
+src/jhash.o: src/jhash.c
+	$(CC) -c src/jhash.c -o src/jhash.o $(CFLAGS)
+
+src/jrand.o: src/jrand.c
+	$(CC) -c src/jrand.c -o src/jrand.o $(CFLAGS)
+
+src/rc4.o: src/rc4.c
+	$(CC) -c src/rc4.c -o src/rc4.o $(CFLAGS)
+
+src/sha256.o: src/sha256.c
+	$(CC) -c src/sha256.c -o src/sha256.o $(CFLAGS)
+
+src/debug.o: src/debug.c
+	$(CC) -c src/debug.c -o src/debug.o $(CFLAGS)
+
+src/jer.o: src/jer.c
+	$(CC) -c src/jer.c -o src/jer.o $(CFLAGS)
+
+src/jtable.o: src/jtable.c
+	$(CC) -c src/jtable.c -o src/jtable.o $(CFLAGS)
+
+src/jpack.o: src/jpack.c
+	$(CC) -c src/jpack.c -o src/jpack.o $(CFLAGS)
+
+src/jdb_undo.o: src/jdb_undo.c
+	$(CC) -c src/jdb_undo.c -o src/jdb_undo.o $(CFLAGS)
+
+src/memmem.o: src/memmem.c
+	$(CC) -c src/memmem.c -o src/memmem.o $(CFLAGS)
+
+jlib_private.res: jlib_private.rc 
+	$(WINDRES) -i jlib_private.rc --input-format=rc -o jlib_private.res -O coff 

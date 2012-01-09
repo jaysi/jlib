@@ -300,10 +300,15 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 	struct jdb_cell_data_ptr_blk_entry* entry, *last, first;
 	struct jdb_cell_data_ptr_blk* blk;
 	
+	if(cell->celldef->bid_entry == JDB_ID_INVAL || cell->celldef->bent == JDB_BENT_INVAL){
+		return -JE_INV;
+	}
+	
 	*list = NULL;
 	first.next = NULL;
 	first.nextdptrbid = cell->celldef->bid_entry;
-	first.nextdptrbent = cell->celldef->bent;
+	first.nextdptrbent = cell->celldef->bent;	
+	
 	last = &first;
 	while(last->nextdptrbid != JDB_ID_INVAL){
 		for(blk = table->data_ptr_list.first; blk; blk = blk->next){
