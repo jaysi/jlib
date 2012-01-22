@@ -3,6 +3,7 @@
 #define _wdeb_alloc _wdeb
 #define _wdeb_data_ptr	_wdeb
 #define _wdeb_add _wdeb
+#define _wdeb_load	_wdeb
 
 int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 				uchar dtype, uchar flags){
@@ -34,7 +35,7 @@ int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 
 	blk->next = NULL;
 
-	if(flags & JDB_TYPEDEF_VDATA)
+	if(flags & JDB_TYPE_VAR)
 		blk->hdr.type = JDB_BTYPE_CELL_DATA_VAR;
 	else
 		blk->hdr.type = JDB_BTYPE_CELL_DATA_FIX;
@@ -474,7 +475,7 @@ static inline int _jdb_alloc_cell_data_a_eq_1(struct jdb_handle *h, struct jdb_t
 		typedef_entry->type_id, table->main.hdr.tid, nentries,
 		JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_DTYPE | JDB_MAP_CMP_NFUL | JDB_MAP_CMP_TID);
 	if(bid == JDB_ID_INVAL){
-		ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPEDEF_VDATA);
+		ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPE_VAR);
 		if(ret < 0) return ret;
 		blk = table->data_list.last;
 	} else {
@@ -527,7 +528,7 @@ static inline int _jdb_alloc_cell_data_a_lt_1(struct jdb_handle *h, struct jdb_t
 		JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_DTYPE |
 		JDB_MAP_CMP_NFUL | JDB_MAP_CMP_TID);
 	if(bid == JDB_ID_INVAL){
-		ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPEDEF_VDATA);
+		ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPE_VAR);
 		if(ret < 0) return ret;
 		blk = table->data_list.last;
 	} else {
@@ -687,7 +688,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 		if(needed_full_blocks > nbids){
 			bid_list = (jdb_bid_t*)realloc(bid_list, sizeof(jdb_bid_t)*needed_full_blocks);
 			for(bid = nbids; bid < needed_full_blocks - nbids; bid++){
-				ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPEDEF_VDATA);
+				ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPE_VAR);
 				bid_list[bid] = table->data_list.last->bid;
 			}
 		}
@@ -740,7 +741,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 				JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_DTYPE |
 				JDB_MAP_CMP_NFUL | JDB_MAP_CMP_TID);
 			if(bid == JDB_ID_INVAL){
-				ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPEDEF_VDATA);
+				ret = _jdb_create_data_blk(h, table, typedef_entry->type_id, JDB_TYPE_VAR);
 				if(ret < 0) return ret;
 				blk = table->data_list.last;
 			} else {
@@ -848,9 +849,56 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 	size_t pos;
 	struct jdb_cell_data_blk* blk;
 	size_t copysize, copypos;	
+	jdb_data_t base;
+	uchar tflags;
 
+	//#ret = fixed
+	ret = 0;
+	if(cell->celldef->data_type <= JDB_TYPE_FIXED_BASE_END) ret = 1;
+	else{
+		if(cell->celldef->data_type < JDB_TYPE_NULL){
+			ret = 0;
+		} else {
+			ret = _jdb_typedef_flags_by_ptr(h, table, cell->celldef->data_type, &tflags);
+			if(ret < 0) return ret;
+			if(tflags & JDB_TYPE_VAR) ret = 0;			
+			else ret = 1;
+		}
+	}
+
+	if(ret){
+		//load fixed data
+		cell->data = (uchar*)malloc(cell->celldef->datalen);
+		if(!cell->data) return -JE_MALOC;
+		
+		cell->dptr = NULL;
+		
+		ret = _jdb_gimme_data_blk(h, table, &blk, cell->celldef->bid_entry);		
+		if(ret < 0){
+			free(cell->data);
+			return ret;		
+		}
+		
+		_jdb_inc_fav(h, table, blk->bid);
+		
+		copypos = cell->celldef->bent*blk->entsize;
+
+		memcpy(cell->data, blk->datapool + copypos, cell->celldef->datalen);
+		pos += copysize;
+		
+		_wdeb_load(L"copypos = %u", copypos);
+		
+		return 0;
+		
+				
+	}
+
+	_wdeb_load(L"called, loading chain...");
+	
 	ret = _jdb_load_dptr_chain(h, table, cell, &dptr_list);
 	if(ret < 0) return ret;
+	
+	_wdeb_load(L"loading chain, done.");
 	
 	cell->data = (uchar*)malloc(cell->celldef->datalen);
 	if(!cell->data) return -JE_MALOC;
@@ -858,21 +906,29 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 	cell->dptr = dptr_list;
 
 	pos = 0;
+	
+	_wdeb_load(L"loading data blocks...");
 
 	for(dptr_entry = dptr_list; dptr_entry; dptr_entry = dptr_entry->next){
+		
+		_wdeb_load(L"loading data block #%u", dptr_entry->bid);
+		
 		ret = _jdb_gimme_data_blk(h, table, &blk, dptr_entry->bid);		
 		if(ret < 0){
 			free(cell->data);
-			return ret;
+			return ret;		
 		}
-
+		
 		_jdb_inc_fav(h, table, blk->bid);
 
 		copysize = dptr_entry->nent*blk->entsize;
 		copypos = dptr_entry->bent*blk->entsize;
 
 		memcpy(cell->data + pos, blk->datapool + copypos, copysize);
-		pos += copysize;		
+		pos += copysize;
+		
+		_wdeb_load(L"copysize = %u, copypos = %u, pos = %u", copysize, copypos, pos);
+		
 	}
 
 	return 0;

@@ -80,14 +80,16 @@ struct jdb_hdr {
 	jdb_bid_t list_buck;
 	jdb_bid_t fav_load;
 
-	uchar pwhash[32];	/*sha256 */
-
 	//status
 	jdb_bid_t nblocks;	//number of blocks
 	jdb_bid_t nmaps;	//number of map blocks
 	jdb_tid_t ntables;
 	uint64_t nwr;		//total number of write requests
+	
+	uchar pwhash[32];	/*sha256 */
+	
 	//PAD
+		
 	uint32_t crc32;		//header crc
 };
 

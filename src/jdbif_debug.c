@@ -383,11 +383,11 @@ void jdbif_type_addz(struct jdb_handle* h){
 		for(i = 1; i <= n; i++){
 			ret = jdb_add_typedef(h, table->main.name, typeid,
 						JDB_TYPE_RAW, i, 
-						i%2==0?0:JDB_TYPEDEF_VDATA);
+						i%2==0?0:JDB_TYPE_VAR);
 			if(ret < 0){
-				wprintf(L"[I%i:L%i:F%x]@%ls, R%i ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name, ret);
+				wprintf(L"[I%i:L%i:F%x]@%ls, R%i ", typeid, i, i%2==0?0:JDB_TYPE_VAR, table->main.name, ret);
 			} else {
-				wprintf(L"I%i:L%i:F%x@%ls ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name);
+				wprintf(L"I%i:L%i:F%x@%ls ", typeid, i, i%2==0?0:JDB_TYPE_VAR, table->main.name);
 			}
 			if(i%3) wprintf(L"\n");
 		}
@@ -412,9 +412,9 @@ void jdbif_tc_addz(struct jdb_handle* h){
 			*/
 			ret = -JE_IMPLEMENT;
 			if(ret < 0){
-				wprintf(L"[I%i:L%i:F%x]@%ls, R%i ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name, ret);
+				wprintf(L"[I%i:L%i:F%x]@%ls, R%i ", typeid, i, i%2==0?0:JDB_TYPE_VAR, table->main.name, ret);
 			} else {
-				wprintf(L"I%i:L%i:F%x@%ls ", typeid, i, i%2==0?0:JDB_TYPEDEF_VDATA, table->main.name);
+				wprintf(L"I%i:L%i:F%x@%ls ", typeid, i, i%2==0?0:JDB_TYPE_VAR, table->main.name);
 			}
 			if(i%3) wprintf(L"\n");
 		}

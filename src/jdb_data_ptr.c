@@ -300,6 +300,9 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 	struct jdb_cell_data_ptr_blk_entry* entry, *last, first;
 	struct jdb_cell_data_ptr_blk* blk;
 	
+	_wdeb_load(	L"called, starting with bid:%u, bent:%u",
+			cell->celldef->bid_entry, cell->celldef->bent);
+	
 	if(cell->celldef->bid_entry == JDB_ID_INVAL || cell->celldef->bent == JDB_BENT_INVAL){
 		return -JE_INV;
 	}
@@ -313,13 +316,16 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 	while(last->nextdptrbid != JDB_ID_INVAL){
 		for(blk = table->data_ptr_list.first; blk; blk = blk->next){
 			if(last->nextdptrbid == blk->bid){
-			
+				
 				entry = &blk->entry[last->nextdptrbent];
 				
 				entry->next = NULL;
 
 				last->next = entry;
 				last = last->next;
+				
+				_wdeb_load(L"last->nextdptrbid=%u, last->nextdptrbent=%u", last->nextdptrbid, last->nextdptrbent);
+				
 			}
 		}
 	}

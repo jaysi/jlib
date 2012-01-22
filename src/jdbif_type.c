@@ -106,7 +106,7 @@ void jdbif_table_type_add_typedef(struct jdb_handle* h){
 			goto get_bit_str;
 		}
 	
-	if(flags & JDB_TYPEDEF_VDATA)
+	if(flags & JDB_TYPE_VAR)
 		wprintf(L"Segment Size: ");
 	else
 		wprintf(L"Data Length: ");

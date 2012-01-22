@@ -3,6 +3,7 @@
 #define _wdeb_data_ptr	_wdeb
 #define _wdeb_add	_wdeb
 #define _wdeb_find	_wdeb
+#define _wdeb_load	_wdeb
 
 static inline int _jdb_check_datalen(uchar dtype, uint32_t datalen)
 {
@@ -550,7 +551,7 @@ int jdb_create_cell(struct jdb_handle *h,
 
 			return ret;
 			
-		if(!(typedef_entry->flags & JDB_TYPEDEF_VDATA)){ //fixed
+		if(!(typedef_entry->flags & JDB_TYPE_VAR)){ //fixed
 			if(	datalen > typedef_entry->len ||
 				datalen%typedef_entry->len)
 					return -JE_SIZE;
@@ -615,7 +616,18 @@ int jdb_create_cell(struct jdb_handle *h,
 
 		memcpy(cell->data, data, datalen);
 		
-		if(typedef_entry->flags & JDB_TYPEDEF_VDATA && dtype > JDB_TYPE_NULL){
+		
+		//#ret = fixed
+		ret = 0;
+		if(dtype <= JDB_TYPE_FIXED_BASE_END){
+			ret = 1;
+		} else {
+			if(dtype < JDB_TYPE_NULL) ret = 0;
+			else if(typedef_entry->flags & JDB_TYPE_VAR) ret = 0;
+			else ret = 1;
+		}		
+		
+		if(!ret){
 
 			ret = _jdb_alloc_cell_data(	h, table, cell,
 							typedef_blk,
@@ -672,7 +684,7 @@ int jdb_create_cell(struct jdb_handle *h,
 
 }
 
-int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
+int jdb_load_cell(struct jdb_handle *h, wchar_t* table_name,
 		uint32_t col, uint32_t row, uchar** data,
 		uint32_t* datalen, uchar* data_type){
 
@@ -680,14 +692,26 @@ int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
 	struct jdb_table* table;
 	int ret;
 	
-	if((ret = _jdb_table_handle(h, table_name, &table)) < 0) return ret;
+	_wdeb_load(L"called");
+	
+	if((ret = _jdb_table_handle(h, table_name, &table)) < 0) return ret;	
 
-	if (!(cell = _jdb_find_cell_by_pos(h, table, row, col)))
+	if (!(cell = _jdb_find_cell_by_pos(h, table, row, col))){
+		_wdeb_load(L"not found");
 		return -JE_NOTFOUND;
+	}
 
 
-	if(cell->data_stat != JDB_CELL_DATA_NOTLOADED) return -JE_EXISTS;
+	if(cell->data_stat != JDB_CELL_DATA_NOTLOADED){
+		_wdeb_load(L"data altrady in memmory, stat = %i", cell->data_stat);
+		*data = cell->data;
+		*datalen = cell->celldef->datalen;
+		*data_type = cell->celldef->data_type;
+		return -JE_EXISTS;
+	}
 
+	_wdeb_load(L"loading cell data");
+	
 	ret = _jdb_load_cell_data(h, table, cell);
 
 	if (ret < 0) {
@@ -697,6 +721,10 @@ int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
 	}
 
 	cell->data_stat = JDB_CELL_DATA_UPTODATE;
+
+	*data = cell->data;
+	*datalen = cell->celldef->datalen;
+	*data_type = cell->celldef->data_type;
 
 	return 0;
 		

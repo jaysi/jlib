@@ -21,6 +21,7 @@ void jdbif_cell_help()
 	wprintf(L"\tRM\tRemove cell\n");
 	wprintf(L"\tFIND\tFind cell\n");
 	wprintf(L"\tLIST\tList cells\n");
+	wprintf(L"\tLISTALL\tList all cells\n");
 	wprintf(L"\tEDIT\tEdit cell\n");
 	wprintf(L"\tEXIT\tExit interface\n");
 }
@@ -154,7 +155,7 @@ void jdbif_find_cell(struct jdb_handle* h){
 	uint32_t col, row;
 	uchar* data;
 	uint32_t datalen;
-	uchar data_type;	
+	jdb_data_t data_type, base;	
 	int ret, unsign;
 	wchar_t yn[2];
 	struct jdb_cell* cell;
@@ -189,7 +190,15 @@ int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
 	
 	switch(yn[0]){
 		case L'y':
-			wprintf(L"-=BEGIN=-\n%s\n-=END=-", data);
+			wprintf(L"-=BEGIN=-\n");
+			ret = jdb_find_type_base(h, table_name, data_type, &base);
+			if(ret < 0){
+				wprintf(L"[FAIL]\n");
+				jif_perr(ret);
+				return;				
+			}
+			jdbif_print_data(data, datalen, base);
+			wprintf(L"\n-=END=-\n");
 			break;
 		case L'f':
 			wprintf(L"filename: ");
@@ -201,6 +210,36 @@ int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
 			break;
 				
 	}
+}
+
+void jdbif_list_all_cells(struct jdb_handle* h){
+	wchar_t table_name[100];
+	int ret;
+	uint32_t col, row, *li_col, *li_row, n, i;
+
+	wprintf(L"table name: ");
+	wscanf(L"%ls", table_name);
+
+	wprintf(L"creating cell list...");
+	ret = jdb_list_cells(h, table_name, JDB_ID_INVAL, JDB_ID_INVAL, &li_col, &li_row, &n);
+	if(ret < 0){
+		wprintf(L"[FAIL]\n");
+		jif_perr(ret);
+		return;
+	}
+	wprintf(L"[DONE]\n");
+	wprintf(L"found %u cells, print in [col, row] order.\n", n);
+	for(i = 0; i < n; i++){
+		wprintf(L"[%u, %u]", li_col[i], li_row[i]);
+		if(i && !(i%4)) wprintf(L"\n");
+		else wprintf(L"\t");
+	}
+
+	if(n){
+		free(li_col);
+		free(li_row);
+	}
+	
 }
 
 void jdbif_list_cells(struct jdb_handle* h){
@@ -262,6 +301,9 @@ int jdbif_table_cell(struct jdb_handle *h)
 	case LIST:
 		jdbif_list_cells(h);
 		break;
+	case LISTALL:
+		jdbif_list_all_cells(h);
+		break;	
 	case STAT:
 		//jdbif_stat_cell(h);
 		break;

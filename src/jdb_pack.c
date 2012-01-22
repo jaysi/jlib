@@ -10,13 +10,88 @@
 
 int _jdb_pack_hdr(struct jdb_hdr *hdr, uchar * buf)
 {
-	memcpy(buf, hdr, sizeof(struct jdb_hdr));
+
+/*
+	uint16_t magic;
+	uchar type;
+	uint32_t ver;
+
+	//configuration
+	uint16_t flags;
+	uchar crc_type;
+	uchar crypt_type;
+
+	uchar wr_retries;
+	uchar rd_retries;
+
+	jdb_bsize_t blocksize;	//must be multiplier of 2^10 (1024)
+
+	//limits
+	jdb_bid_t max_blocks;
+
+	//block entries
+	jdb_bent_t map_bent;
+	jdb_bent_t typedef_bent;
+	jdb_bent_t col_typedef_bent;
+	jdb_bent_t celldef_bent;
+	jdb_bent_t index1_bent;
+	jdb_bent_t dptr_bent;
+	jdb_bent_t fav_bent;
+	jdb_bent_t index0_bent;
+	
+	jdb_bid_t map_list_buck;
+	jdb_bid_t list_buck;
+	jdb_bid_t fav_load;	
+
+	//status
+	jdb_bid_t nblocks;	//number of blocks
+	jdb_bid_t nmaps;	//number of map blocks
+	jdb_tid_t ntables;
+	uint64_t nwr;		//total number of write requests
+	
+	uchar pwhash[32];	//sha256
+	
+	//PAD
+	
+	uint32_t crc32;		//header crc
+
+*/
+
+	pack(buf, "hclhcccchlhhhhhhhhllllllt",
+		h->hdr.magic,
+		h->hdr.type,
+		h->hdr.ver,
+		h->hdr.flags,
+		h->hdr.crc_type,
+		h->hdr.crypt_type,
+		h->hdr.wr_retries,
+		h->hdr.rd_retries,
+		h->hdr.blocksize,
+		h->hdr.max_blocks,
+		h->hdr.map_bent,
+		h->hdr.typedef_bent,
+		h->hdr.col_typedef_bent,
+		h->hdr.celldef_bent,
+		h->hdr.index1_bent,
+		h->hdr.dptr_bent,
+		h->hdr.fav_bent,
+		h->hdr.index0_bent,
+		h->hdr.map_list_buck,
+		h->hdr.list_buck,
+		h->hdr.fav_load,
+		h->hdr.nblocks,
+		h->hdr.nmaps,
+		h->hdr.ntables,
+		h->hdr.nwr
+		);
+	memcpy(buf+		
+	
 	return 0;
 }
 
 int _jdb_unpack_hdr(struct jdb_hdr *hdr, uchar * buf)
 {
-	memcpy(hdr, buf, sizeof(struct jdb_hdr));
+	
 	return 0;
 }
 
@@ -580,6 +655,9 @@ int _jdb_pack_data(struct jdb_handle* h, struct jdb_cell_data_blk *blk,
 
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		crc32 = _jdb_crc32(buf, h->hdr.blocksize);
+		
+		_wdeb_crc(L"crc of packed data: 0x%08x", crc32);
+		
 		pack(buf + sizeof(struct jdb_cell_data_blk_hdr) - sizeof(uint32_t),
 		     "l", crc32);
 	}
@@ -602,8 +680,14 @@ int _jdb_unpack_data(struct jdb_handle* h, struct jdb_table* table,
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		unpack(buf + sizeof(struct jdb_cell_data_blk_hdr) - sizeof(uint32_t),
 		       "l", &crc32);
+		       
+		_wdeb_crc(L"crc of packed data: 0x%08x", crc32);
+		
 		pack(buf + sizeof(struct jdb_cell_data_blk_hdr) - sizeof(uint32_t),
 		     "l", 0x00000000);
+		     
+		_wdeb_crc(L"crc calculated is: 0x%08x", _jdb_crc32(buf, h->hdr.blocksize));
+		     
 		if (crc32 != _jdb_crc32(buf, h->hdr.blocksize))
 			return -JE_CRC;
 	}
@@ -612,14 +696,22 @@ int _jdb_unpack_data(struct jdb_handle* h, struct jdb_table* table,
 	
 	if(blk->hdr.type != JDB_BTYPE_CELL_DATA_FIX && 
 	blk->hdr.type != JDB_BTYPE_CELL_DATA_VAR) return -JE_TYPE;
-
-	ret = _jdb_find_typedef(h, table, type_id, &typedef_blk, &typedef_entry);
-	if(ret < 0) return ret;
-
-	blk->entsize = typedef_entry->len;
-	blk->data_type = typedef_entry->type_id;
-	blk->base_type = typedef_entry->base;
-	blk->base_len = _jdb_base_dtype_size(typedef_entry->base);
+	
+	if(type_id > JDB_TYPE_NULL){
+		ret = _jdb_find_typedef(h, table, type_id, &typedef_blk, &typedef_entry);
+		if(ret < 0) return ret;
+	
+		blk->entsize = typedef_entry->len;
+		blk->data_type = typedef_entry->type_id;
+		blk->base_type = typedef_entry->base;
+		blk->base_len = _jdb_base_dtype_size(typedef_entry->base);
+	} else {
+		blk->base_type = type_id;
+		blk->data_type = type_id;
+		blk->entsize = _jdb_base_dtype_size(type_id);
+		blk->base_len = blk->entsize;
+	}
+	
 	_jdb_get_map_nful_by_bid(h, blk->bid, &blk->nent);
 	
 	if(h->hdr.crc_type != JDB_CRC_NONE){
@@ -638,6 +730,8 @@ int _jdb_unpack_data(struct jdb_handle* h, struct jdb_table* table,
 	for(i = 0; i < blk->bmapsize; i++){
 		blk->bitmap[i] = *buf++;
 	}
+	
+	buf += blk->bmapsize;
 
 	databufsize = blk->maxent * blk->entsize;
 

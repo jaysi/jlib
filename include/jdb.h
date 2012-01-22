@@ -191,7 +191,7 @@ struct jdb_handle {
 #define JDB_TABLE_LOAD_DATA		(0x01<<3)	//load data when loading table
 
 /*				type-flags*/
-#define JDB_TYPEDEF_VDATA	(0x01<<0)
+//#define JDB_TYPEDEF_VDATA	(0x01<<0)
 
 /*				index types					*/
 #define JDB_INDEX_CELL_VDATA	JDB_ITYPE_INDEX1	//exact vdata match index, mandatory when flag is set
@@ -247,6 +247,8 @@ extern "C" {
 				uint32_t col);
 	int jdb_rm_col_type(struct jdb_handle *h,
 			    wchar_t* table_name, uint32_t col);
+	int jdb_find_type_base(	struct jdb_handle* h, wchar_t* table_name,
+				jdb_data_t type_id, jdb_data_t* base);
 
 /*
 	table cell
