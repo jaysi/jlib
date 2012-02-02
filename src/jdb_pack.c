@@ -153,12 +153,12 @@ int _jdb_pack_map(struct jdb_handle* h, struct jdb_map *blk, uchar * buf)
 	jdb_bsize_t pos;
 	uint32_t crc32;
 	
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}	
-
-	pack(buf, "cchl",
+	//zero out PADDING, for CRC!
+	pos = sizeof(struct jdb_map_blk_hdr) +
+		h->hdr.map_bent*sizeof(struct jdb_map_blk_entry);
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);
+	
+	pack(buf, "cchl", 
 	     blk->hdr.type, blk->hdr.flags, blk->hdr.nset, 0x00000000);
 
 	pos = sizeof(struct jdb_map_blk_hdr);
@@ -221,6 +221,7 @@ int _jdb_pack_table_def(struct jdb_handle* h, struct jdb_table_def_blk *blk,
 {
 	
 	uint32_t crc32;
+	jdb_bsize_t pos;
 /*	
 	if(blk->hdr.namelen > h->hdr.blocksize - (sizeof(jdb_table_def_blk_hdr)+
 		 1)) return -JE_TOOLONG;	
@@ -230,12 +231,10 @@ int _jdb_pack_table_def(struct jdb_handle* h, struct jdb_table_def_blk *blk,
 		if(blk->hdr.namelen) return -JE_FORBID;
 	}
 */
-	//memset(buf, '\0', h->hdr.blocksize);
 	
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}	
+	//zero out PADDING, for CRC!
+	//pos = sizeof(struct jdb_table_def_blk_hdr) + blk->hdr.namelen - 1;
+//	memset(buf + pos, '\0', h->hdr.blocksize - pos);	
 		
 	pack(buf, "cchlhlltll",
 	     blk->hdr.type,
@@ -258,6 +257,10 @@ int _jdb_pack_table_def(struct jdb_handle* h, struct jdb_table_def_blk *blk,
 	//	memcpy(buf + sizeof(struct jdb_table_def_blk_hdr), blk->name, blk->hdr.namelen+1);			
 	}
 	
+	pos = sizeof(struct jdb_table_def_blk_hdr) + blk->hdr.namelen;
+	_wdeb_crc(L"pos is %u, namelen is %u, hsize is %u, HSIZE is %u, pad size is %u", pos, blk->hdr.namelen, sizeof(struct jdb_table_def_blk_hdr), JDB_TABLE_DEF_BLK_HDR_SIZE, h->hdr.blocksize - pos);
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);
+		
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		crc32 = _jdb_crc32(buf, h->hdr.blocksize);
 		_wdeb_crc(L"CRC32: 0x%08x", crc32);
@@ -338,16 +341,11 @@ int _jdb_pack_typedef(struct jdb_handle* h, struct jdb_typedef_blk *blk,
 	jdb_bent_t i;
 	jdb_bsize_t pos;
 	uint32_t crc32;
-/*	
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}
-*/
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}
+	
+	//zero out PADDING, for CRC!
+	pos = sizeof(struct jdb_typedef_blk_hdr) +
+		h->hdr.typedef_bent*sizeof(struct jdb_typedef_blk_entry);
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);	
 
 	pack(buf, "ccl", blk->hdr.type, blk->hdr.flags, 0x00000000);
 
@@ -422,10 +420,10 @@ int _jdb_pack_col_typedef(struct jdb_handle* h, struct jdb_col_typedef *blk,
 	jdb_bsize_t pos;
 	uint32_t crc32;
 	
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}	
+	//zero out PADDING, for CRC!
+	pos = sizeof(struct jdb_col_typedef_blk_hdr) +
+		h->hdr.col_typedef_bent*sizeof(struct jdb_col_typedef_blk_entry);
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);	
 
 	pack(buf, "ccl", blk->hdr.type, blk->hdr.flags, 0x00000000);
 
@@ -487,10 +485,10 @@ int _jdb_pack_celldef(	struct jdb_handle* h, struct jdb_celldef_blk *blk,
 	jdb_bsize_t pos;
 	uint32_t crc32;
 	
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}	
+	//zero out PADDING, for CRC!
+	pos = sizeof(struct jdb_celldef_blk_hdr) +
+		h->hdr.celldef_bent*sizeof(struct jdb_celldef_blk_entry);
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);	
 
 	pack(buf, "ccl", blk->hdr.type, blk->hdr.flags, 0x00000000);
 
@@ -576,10 +574,10 @@ int _jdb_pack_data_ptr(struct jdb_handle* h, struct jdb_cell_data_ptr_blk *blk,
 	jdb_bsize_t pos;
 	uint32_t crc32;
 	
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}	
+	//zero out PADDING, for CRC!
+	pos = sizeof(struct jdb_cell_data_ptr_blk_hdr) +
+		h->hdr.dptr_bent*sizeof(struct jdb_cell_data_ptr_blk_entry);
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);	
 
 	pack(buf, "ccl",
 	     blk->hdr.type, blk->hdr.flags, 0x00000000);
@@ -653,14 +651,19 @@ int _jdb_pack_data(struct jdb_handle* h, struct jdb_cell_data_blk *blk,
 	uint32_t crc32;
 	jdb_bsize_t databufsize;
 	
+	jdb_bsize_t pos;
+
+/*	
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		//this is strange... but fixes CRC errors!!!		
 		memset(buf, '\0', h->hdr.blocksize);
 	}	
+*/
 
 	pack(buf, "cccl", blk->hdr.type, blk->hdr.flags, blk->hdr.dtype, 0x00000000);
-
-	buf += sizeof(struct jdb_cell_data_blk_hdr);
+	
+	
+	pos = sizeof(struct jdb_cell_data_blk_hdr);	
 	
 	_wdeb_data(L"bmapsize = %u, blocksize = %u, maxent = %u, nent = %u, entsize = %u, baselen = %u, basetype = 0x%02x",
 		blk->bmapsize,
@@ -671,8 +674,11 @@ int _jdb_pack_data(struct jdb_handle* h, struct jdb_cell_data_blk *blk,
 		blk->base_len,
 		blk->base_type);
 
+	
+
 	for(i = 0; i < blk->bmapsize; i++){
-		*buf++ = (blk->bitmap[i]>>0)&0xff;
+		*(buf+pos) = (blk->bitmap[i]>>0)&0xff;
+		pos++;
 	}	
 
 	//databufsize = blk->nent * blk->entsize; this can't be true,
@@ -686,38 +692,37 @@ int _jdb_pack_data(struct jdb_handle* h, struct jdb_cell_data_blk *blk,
 		switch (blk->base_type) {
 		case JDB_TYPE_BYTE:
 		case JDB_TYPE_CHAR:
-			*buf++ = (blk->datapool[j] >> 0) & 0xff;
+			*(buf+pos) = (blk->datapool[j] >> 0) & 0xff;
 			break;
 		case JDB_TYPE_SHORT:
-			packi16(buf,
-				(unsigned short)(*(blk->datapool + j)));
-			buf += 2;
+			packi16(buf + pos,
+				(unsigned short)(*(blk->datapool + j)));			
 			break;
 		case JDB_TYPE_LONG:
 		case JDB_TYPE_WIDE:
-			packi32(buf,
-				(unsigned long)(*(blk->datapool + j)));
-			buf += 4;
+			packi32(buf + pos,
+				(unsigned long)(*(blk->datapool + j)));			
 			break;
 		case JDB_TYPE_LONG_LONG:
-			packi64(buf,
+			packi64(buf + pos,
 				(unsigned long
-				 long)(*(blk->datapool + j)));
-			buf += 8;
+				 long)(*(blk->datapool + j)));		
 			break;
 		case JDB_TYPE_DOUBLE:
 			d = pack754_64((long
 					double)(*(blk->datapool + j)));
-			packi64(buf, d);
-			buf += 8;
+			packi64(buf + pos, d);		
 			break;
 		default:
-			*buf++ = blk->datapool[j];
+			*(buf+pos) = blk->datapool[j];
 			break;
 		}
+		pos += blk->base_len;
 	}
 	
-	_wdeb_data(L"buf: %s", (buf-databufsize));
+	_wdeb_data(L"buf: %s", buf+sizeof(struct jdb_cell_data_blk_hdr)+blk->bmapsize);
+	
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);
 
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		crc32 = _jdb_crc32(buf, h->hdr.blocksize);
@@ -742,7 +747,7 @@ int _jdb_unpack_data(	struct jdb_handle* h, struct jdb_table* table,
 	size_t pos, i, j;
 	struct jdb_typedef_blk* typedef_blk;
 	struct jdb_typedef_blk_entry* typedef_entry;
-	int ret;
+	int ret;	
 	
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		unpack(buf + sizeof(struct jdb_cell_data_blk_hdr) - sizeof(uint32_t),
@@ -757,7 +762,7 @@ int _jdb_unpack_data(	struct jdb_handle* h, struct jdb_table* table,
 		     
 		if (crc32 != _jdb_crc32(buf, h->hdr.blocksize)){
 			_wdeb_crc(L"crc failed");
-			//return -JE_CRC;
+			return -JE_CRC;
 		}
 	}
 	
@@ -809,11 +814,12 @@ int _jdb_unpack_data(	struct jdb_handle* h, struct jdb_table* table,
 	blk->bitmap = (uchar*)malloc(blk->bmapsize);
 	if(!blk->bitmap) return -JE_MALOC;
 
-	//pos = sizeof(struct jdb_cell_data_blk_hdr);
-	buf += sizeof(struct jdb_cell_data_blk_hdr);
+	pos = sizeof(struct jdb_cell_data_blk_hdr);
+	//buf += sizeof(struct jdb_cell_data_blk_hdr);
 
 	for(i = 0; i < blk->bmapsize; i++){
-		blk->bitmap[i] = *buf++;
+		blk->bitmap[i] = *(buf+pos);
+		pos++;
 	}
 	
 	//buf += blk->bmapsize;
@@ -826,36 +832,34 @@ int _jdb_unpack_data(	struct jdb_handle* h, struct jdb_table* table,
 		return -JE_MALOC;
 	}
 	
-	_wdeb_data(L"read buf: %s", buf);
+	_wdeb_data(L"read buf: %s", buf+sizeof(struct jdb_cell_data_blk_hdr)+blk->bmapsize);
 	
 	for (j = 0; j < databufsize; j += blk->base_len) {
 		switch (blk->base_type) {
 		case JDB_TYPE_BYTE:
 		case JDB_TYPE_CHAR:
-			blk->datapool[j] = *buf++;
+			blk->datapool[j] = *(buf+pos);
 			break;
 		case JDB_TYPE_SHORT:
-			*(blk->datapool + j) = unpacki16(buf);
-			buf += 2;
+			*(blk->datapool + j) = unpacki16(buf+pos);			
 			break;
 		case JDB_TYPE_LONG:
 		case JDB_TYPE_WIDE:
-			*(blk->datapool + j) = unpacki32(buf);
-			buf += 4;
+			*(blk->datapool + j) = unpacki32(buf+pos);		
 			break;
 		case JDB_TYPE_LONG_LONG:
-			*(blk->datapool + j) = unpacki64(buf);
-			buf += 8;
+			*(blk->datapool + j) = unpacki64(buf+pos);		
 			break;
 		case JDB_TYPE_DOUBLE:
-			d = unpacki64(buf);
-			*(blk->datapool + j) = unpack754_64(d);
-			buf += 8;
+			d = unpacki64(buf+pos);
+			*(blk->datapool + j) = unpack754_64(d);			
 			break;
 		default:
-			blk->datapool[j] = *buf++;
+			blk->datapool[j] = *(buf+pos);
 			break;
 		}
+		
+		pos += blk->base_len;
 	}
 	
 

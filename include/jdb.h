@@ -58,6 +58,18 @@
 #define JDB_TYPE_UNSIGNED	(0x01<<0)	//unsigned value
 #define JDB_TYPE_VAR		(0x01<<1)	//variable length
 
+#define JDB_TYPELEN_EMPTY	0
+#define JDB_TYPELEN_BYTE	1
+#define JDB_TYPELEN_SHORT	2
+#define JDB_TYPELEN_LONG	4
+#define JDB_TYPELEN_LONG_LONG	8
+#define JDB_TYPELEN_DOUBLE	8
+#define JDB_TYPELEN_CHAR	1
+#define JDB_TYPELEN_JCS		2
+#define JDB_TYPELEN_WIDE	4
+#define JDB_TYPELEN_RAW		1
+#define JDB_TYPELEN_NULL	0
+
 /*
 	versioning:
 	byte1: engine version major

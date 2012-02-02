@@ -473,7 +473,7 @@ static inline int _jdb_alloc_cell_data_a_eq_1(struct jdb_handle *h, struct jdb_t
 	jdb_bent_t first_dptr_bent;	
 
 	bid = _jdb_find_first_map_match(h, JDB_BTYPE_CELL_DATA_VAR,
-		dtype, table->main.hdr.tid, nentries,
+		dtype, table->main.hdr.tid, 0,
 		JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_DTYPE | JDB_MAP_CMP_NFUL | JDB_MAP_CMP_TID);
 	if(bid == JDB_ID_INVAL){
 		ret = _jdb_create_data_blk(h, table, dtype, JDB_TYPE_VAR);
@@ -526,9 +526,10 @@ static inline int _jdb_alloc_cell_data_a_lt_1(struct jdb_handle *h, struct jdb_t
 	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry, *dptr_last;
 	uint32_t typelen, baselen;
 	jdb_data_t base;
+	jdb_bent_t nset;	
 
 	bid = _jdb_find_first_map_match(h, JDB_BTYPE_CELL_DATA_VAR,
-		dtype, table->main.hdr.tid, nchunks,
+		dtype, table->main.hdr.tid, nentries - nchunks,
 		JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_DTYPE |
 		JDB_MAP_CMP_NFUL | JDB_MAP_CMP_TID);
 	if(bid == JDB_ID_INVAL){
@@ -602,17 +603,19 @@ static inline int _jdb_alloc_cell_data_a_lt_1(struct jdb_handle *h, struct jdb_t
 
 	/* copy data to the block's datapool*/
 	pos = 0;
-
+	nset = 0;
 	for(ret = 0; ret < nentries; ret++){
 		if(!test_bit(blk->bitmap, ret)){
 			set_bit(blk->bitmap, ret);
 			memcpy(blk->datapool + ret*typelen, data + pos, typelen);
 			pos += typelen;
 			blk->nent++;
+			nset++;
+			if(nset == nchunks) break;			
 		}		
 	}
 	
-	_wdeb_alloc(L"blk->nent = %u", blk->nent);
+	_wdeb_alloc(L"blk->nent = %u, nentries = %u, nchunks = %u", blk->nent, nentries, nchunks);
 	_jdb_inc_map_nful_by_bid(h, blk->bid, blk->nent);
 	
 	
@@ -750,7 +753,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 		needed_full_blocks = nchunks / nentries;
 		ret = _jdb_list_map_match(h, JDB_BTYPE_CELL_DATA_VAR,
 					dtype, table->main.hdr.tid,
-					nentries,
+					0,
 					JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_DTYPE |
 					JDB_MAP_CMP_NFUL | JDB_MAP_CMP_TID,
 					&bid_list, &nbids);
@@ -786,6 +789,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 			pos += copysize;
 			
 			blk->nent = blk->maxent;
+			_jdb_set_map_nful_by_bid(h, blk->bid, blk->maxent);
 
 			//need one entry
 			dptr_list->bid = bid_list[bid];
@@ -806,7 +810,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 			_wdeb_alloc(L"remaining number of entries %u (nchunks %u)", nentries, nchunks);
 
 			bid = _jdb_find_first_map_match(h, JDB_BTYPE_CELL_DATA_VAR,
-				dtype, table->main.hdr.tid, nchunks,
+				dtype, table->main.hdr.tid, nentries - nchunks,
 				JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_DTYPE |
 				JDB_MAP_CMP_NFUL | JDB_MAP_CMP_TID);
 			if(bid == JDB_ID_INVAL){
@@ -818,41 +822,60 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 				if(ret < 0) return ret;
 			}
 
-			//need ? entries
+			//actually this is the code of alloc_lt_1() except some parts, REPLACE IT!
 
-			blk_ent_list = (jdb_bent_t*)malloc(sizeof(jdb_bent_t)*nchunks);
-			if(!blk_ent_list) return -JE_MALOC;
-		
+			//need ? entries
+			
 			blk_ent_ptr = 0;		
 			for(ret = 0; ret < nentries; ret++){
 				if(!test_bit(blk->bitmap, ret)){
 					blk_ent_list[blk_ent_ptr] = ret;
 					_wdeb_alloc(L"got empty bit @ %i", ret);
 					blk_ent_ptr++;
-				
+					
+					if(blk_ent_ptr == nchunks) break;
+					
 				}
 			}
-
+		
 			_wdeb_alloc(L"block entry ptr %u", blk_ent_ptr);
 
-			dptr_needed = 1;
-
+			/* calculate needed data pointers */
+		
+			dptr_needed = 0;
+		
 			for(ret = 0; ret < blk_ent_ptr; ret++){
-				if(ret && (blk_ent_list[ret] == blk_ent_list[ret-1]+1)){
-				
+#ifndef NDEBUG
+				if(ret){
+					_wdeb_alloc(L"blk_ent_list[%i] = %u, blk_ent_list[%i] = %u", ret, blk_ent_list[ret], ret-1, blk_ent_list[ret-1]);
+				} else {
+					_wdeb_alloc(L"blk_ent_list[%i] = %u", ret, blk_ent_list[ret]);
+				}
+#endif				
+				if(ret && 
+					(blk_ent_list[ret-1] == (blk_ent_list[ret]-1))//continues chain
+					){
+					
 				} else {
 					dptr_needed++;
 				}
 			}
-
-			_wdeb_alloc(L"needed data ptrs %u", dptr_needed);
+	
+			/* create empty data chain */
 		
+			_wdeb_alloc(L"needed data ptrs %u", dptr_needed);
+			
 			ret = _jdb_create_dptr_chain(h, table, &dptr_list, dptr_needed, &first_dptr_bid, &first_dptr_bent);
 			if(ret < 0){
 				free(blk_ent_list);
 				return ret;
 			}
 
+			/*
+				int the lt_1 code:
+					
+			*/
+		
 			//glue two lists
 			dptr_last->next = dptr_list;
 			dptr_last->nextdptrbid = first_dptr_bid;

@@ -106,7 +106,7 @@ void jdbif_add_cell(struct jdb_handle* h){
 			return;
 		}
 		wprintf(L"data: ");
-		wscanf(L"%s", data);
+		scanf("%s", data);
 	}
 	wprintf(L"data_type: ");
 	wscanf(L"%i", &ret);

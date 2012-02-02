@@ -227,6 +227,7 @@ int _jdb_create_dptr_chain(struct jdb_handle* h, struct jdb_table* table,
 again:	
 	
 	for(blk = table->data_ptr_list.first; blk; blk = blk->next){
+		_wdeb_find(L"blk->nent = %u, h->hdr.dptr_bent = %u", blk->nent, h->hdr.dptr_bent);
 		if(blk->nent < h->hdr.dptr_bent){
 			added_in_this_blk = 0;				
 			for(bent = 0; bent < h->hdr.dptr_bent; bent++){

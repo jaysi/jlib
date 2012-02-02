@@ -93,7 +93,7 @@ struct jdb_hdr {
 	//PAD
 		
 	uint32_t crc32;		//header crc
-};
+}__attribute__((packed));
 
 //block types
 #define JDB_BTYPE_EMPTY		0x00
@@ -134,7 +134,7 @@ struct jdb_map_blk_hdr {
 
 	jdb_bent_t nset;	//number of entries set
 	uint32_t crc32;		//crc of the block including header
-};
+}__attribute__((packed));
 
 struct jdb_map_blk_entry {
 	jdb_blk_t blk_type;
@@ -154,7 +154,7 @@ struct jdb_map_blk_entry {
 	   map_bid = map_order*(map_entry_capacity + 1);
 	   bid = map_bid + blk_entry_inside_the_map;
 	 */
-};
+}__attribute__((packed));
 
 struct jdb_map {
 	jdb_bid_t bid;
@@ -177,14 +177,14 @@ struct jdb_typedef_blk_hdr {
 	uchar flags;
 
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_typedef_blk_entry {
 	uchar flags;
 	uchar type_id;		//jdb_data_t
 	uchar base;		//jdb_data_t too!
 	uint32_t len;		//chunksize if var flag set
-};
+}__attribute__((packed));
 
 struct jdb_typedef_blk {
 	uint32_t write;
@@ -206,7 +206,7 @@ struct jdb_celldef_blk_hdr {
 	uchar flags;
 
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_celldef_blk_entry {
 	struct jdb_celldef_blk* parent;		//pointer to the celldef_blk's write, so i can set it directly on change
@@ -222,7 +222,7 @@ struct jdb_celldef_blk_entry {
 	jdb_bent_t bent;
 	uchar last_access_d[3];
 	uchar last_access_t[3];
-};
+}__attribute__((packed));
 
 struct jdb_celldef_blk {
 	uint32_t write;
@@ -256,7 +256,7 @@ struct jdb_cell_data_blk_hdr {
 	uchar flags;
 	uchar dtype;//already shown in map, put here for performance issues
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_cell_data_blk {
 	uint32_t write;
@@ -287,7 +287,7 @@ struct jdb_cell_data_ptr_blk_hdr {
 	uchar flags;
 	//uchar data_type; not needed, shown in map entry       
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_cell_data_ptr_blk_entry {
 	struct jdb_cell_data_ptr_blk* parent;
@@ -298,7 +298,7 @@ struct jdb_cell_data_ptr_blk_entry {
 	jdb_bid_t nextdptrbid;
 	jdb_bent_t nextdptrbent;
 	struct jdb_cell_data_ptr_blk_entry* next;
-};
+}__attribute__((packed));
 
 struct jdb_cell_data_ptr_blk{
 	uint32_t write;
@@ -342,6 +342,12 @@ struct jdb_cell_list {
 	struct jdb_cell *last;
 };
 
+#define JDB_TABLE_DEF_BLK_HDR_SIZE (sizeof(uchar)+sizeof(uchar)+\
+				sizeof(uint16_t)+sizeof(jdb_tid_t)+\
+				sizeof(uint16_t)+sizeof(uint32_t)+\
+				sizeof(uint32_t)+sizeof(uint64_t)+\
+				sizeof(jdb_bid_t)+sizeof(uint32_t))
+
 struct jdb_table_def_blk_hdr {
 	uchar type;
 	uchar flags;
@@ -354,7 +360,7 @@ struct jdb_table_def_blk_hdr {
 	uint64_t ncells;
 	jdb_bid_t ncol_typedef;	//number of col_typedef entries
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_table_def_blk {
 	uint32_t write;
@@ -370,12 +376,12 @@ struct jdb_col_typedef_blk_hdr {
 	uchar flags;
 
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_col_typedef_blk_entry {
 	uchar type_id;
 	uint32_t col;
-};
+}__attribute__((packed));
 
 struct jdb_col_typedef {
 	uint32_t write;
@@ -384,7 +390,7 @@ struct jdb_col_typedef {
 	struct jdb_col_typedef_blk_hdr hdr;
 	struct jdb_col_typedef_blk_entry *entry;
 	struct jdb_col_typedef *next;
-};
+}__attribute__((packed));
 
 struct jdb_col_typedef_list {
 	jdb_bid_t cnt;
@@ -396,12 +402,12 @@ struct jdb_fav_blk_hdr{
 	uchar type;
 	uchar flags;
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_fav_blk_entry{
 	jdb_bid_t bid;
 	uint32_t nhits;
-};
+}__attribute__((packed));
 
 struct jdb_fav_blk{
 	uint32_t write;
@@ -432,12 +438,12 @@ struct jdb_index0_blk_hdr{
 	uchar flags;
 
 	uint32_t crc32;		//crc of the block including header
-};
+}__attribute__((packed));
 
 struct jdb_index0_blk_entry{
 	uint32_t hash;
 	uint32_t tid;//JDB_ID_INVAL for empty entries
-};
+}__attribute__((packed));
 
 struct jdb_index0_blk{
 	uint32_t write;
@@ -461,14 +467,14 @@ struct jdb_index1_blk_hdr {
 	uchar flags;
 
 	uint32_t crc32;
-};
+}__attribute__((packed));
 
 struct jdb_index1_blk_entry {
 	uint64_t hash64;
 	jdb_tid_t tid;
 	uint32_t row;
 	uint32_t col;
-};
+}__attribute__((packed));
 
 struct jdb_index1 {
 	uint32_t write;
