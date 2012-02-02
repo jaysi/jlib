@@ -47,6 +47,8 @@ struct JDBConstHdr{
 
 struct jdb_handle;
 
+#define PWHASHSIZE	32//sha256
+
 struct jdb_hdr {
 	//fixed
 	uint16_t magic;
@@ -86,7 +88,7 @@ struct jdb_hdr {
 	jdb_tid_t ntables;
 	uint64_t nwr;		//total number of write requests
 	
-	uchar pwhash[32];	/*sha256 */
+	uchar pwhash[PWHASHSIZE];	/*sha256 */
 	
 	//PAD
 		
@@ -779,8 +781,7 @@ void _jdb_free_vdata_list(struct jdb_table *table);
 void _jdb_free_data_list(struct jdb_table *table);
 void _jdb_free_cell_list(struct jdb_table* table);
 int _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
-		     struct jdb_cell *cell, struct jdb_typedef_blk* typedef_blk,
-		     struct jdb_typedef_blk_entry* typedef_entry,
+		     struct jdb_cell *cell, jdb_data_t dtype,
 		     uchar* data, size_t datalen, int first);
 		     
 void _jdb_free_celldef_list(struct jdb_table *table);		     

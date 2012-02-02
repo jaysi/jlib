@@ -24,7 +24,7 @@ int _jdb_create_data_ptr(struct jdb_handle *h, struct jdb_table* table)
 	jdb_bid_t bid;
 	jdb_bent_t i;
 	
-	_wdeb_data_ptr(L"data_ptr bid %u", bid);
+	//_wdeb_data_ptr(L"data_ptr bid %u", bid);
 
 	data_ptr = (struct jdb_cell_data_ptr_blk *)malloc(sizeof(struct jdb_cell_data_ptr_blk));
 	if (!data_ptr) {
@@ -225,45 +225,71 @@ int _jdb_create_dptr_chain(struct jdb_handle* h, struct jdb_table* table,
 	*list = NULL;
 
 again:	
-	while(n){
-		for(blk = table->data_ptr_list.first; blk; blk = blk->next){
-			if(blk->nent < h->hdr.dptr_bent){
-				added_in_this_blk = 0;				
-				for(bent = 0; bent < h->hdr.dptr_bent; bent++){
-					if(blk->entry[bent].bid == JDB_ID_INVAL){
-						if(!(*list)){
-							*list = &blk->entry[bent];
-							last = *list;
-							*first_bid = blk->bid;
-							*first_bent = bent;							
-						} else {
-							last->next = &blk->entry[bent];
-							last->nextdptrbid = blk->bid;
-							last->nextdptrbent = bent;
-							last = last->next;
-						}
-						
-						blk->nent++;// OnUse
-						added_in_this_blk++;
-						n--;
-					
+	
+	for(blk = table->data_ptr_list.first; blk; blk = blk->next){
+		if(blk->nent < h->hdr.dptr_bent){
+			added_in_this_blk = 0;				
+			for(bent = 0; bent < h->hdr.dptr_bent; bent++){
+				if(blk->entry[bent].bid == JDB_ID_INVAL){
+					if(!(*list)){
+						*list = &blk->entry[bent];
+						last = *list;
+						*first_bid = blk->bid;
+						*first_bent = bent;						
+													
+					} else {
+						last->next = &blk->entry[bent];
+						last->nextdptrbid = blk->bid;
+						last->nextdptrbent = bent;
+						last = last->next;
 					}
+					
+					blk->nent++;// OnUse
+					added_in_this_blk++;
+					n--;
+					
+					if(!n){
+						_jdb_inc_map_nful_by_bid(h, blk->bid, added_in_this_blk);// OnUse						
+						last->next = NULL;
+						last->nextdptrbid = JDB_ID_INVAL;
+						
+						#ifndef NDEBUG
+						wprintf(L"DPTR_CHAIN(first:%u[%u]):", *first_bid, *first_bent);
+						for(entry = *list; entry; entry = entry->next){							
+							wprintf(L"DATA:%u[%u]*%u, NEXT:%u[%u]",
+							entry->bid, entry->bent, entry->nent, entry->nextdptrbid, entry->nextdptrbent);
+						}
+						wprintf(L"\n");
+						#endif											
+						
+						return 0;
+						
+					}				
 				}
-				_jdb_inc_map_nful_by_bid(h, blk->bid, added_in_this_blk);// OnUse
 			}
+			_jdb_inc_map_nful_by_bid(h, blk->bid, added_in_this_blk);// OnUse
 		}
-	}	
+	}
 
-	if(!n){	
-
+	if(!n){
 		last->next = NULL;
 		last->nextdptrbid = JDB_ID_INVAL;
+
+		#ifndef NDEBUG
+		wprintf(L"DPTR_CHAIN:");
+		for(entry = *list; entry; entry = entry->next){
+			wprintf(L"DATA:%u[%u]*%u, NEXT:%u[%u]",
+			entry->bid, entry->bent, entry->nent,
+			entry->nextdptrbid, entry->nextdptrbent);
+		}
+		wprintf(L"\n");
+		#endif
 
 		return 0;
 	} else {//if reached here, all empty slots are filled and new blocks are needed
 		
 		ret = _jdb_create_data_ptr(h, table);
-		if(ret < 0){
+		if(ret < 0){//kinda undo code
 			if(*list){				
 				_jdb_dec_map_nful_by_bid(h, *first_bid, 1);
 				for(blk = table->data_ptr_list.first; blk; blk = blk->next){
@@ -297,7 +323,7 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 				struct jdb_cell* cell,
 				struct jdb_cell_data_ptr_blk_entry** list){
 				
-	struct jdb_cell_data_ptr_blk_entry* entry, *last, first;
+	struct jdb_cell_data_ptr_blk_entry* entry, *last, *first;
 	struct jdb_cell_data_ptr_blk* blk;
 	
 	_wdeb_load(	L"called, starting with bid:%u, bent:%u",
@@ -308,11 +334,33 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 	}
 	
 	*list = NULL;
-	first.next = NULL;
-	first.nextdptrbid = cell->celldef->bid_entry;
-	first.nextdptrbent = cell->celldef->bent;	
 	
-	last = &first;
+	//first = (struct jdb_cell_data_ptr_blk_entry*)malloc(sizeof(struct jdb_cell_data_ptr_blk_entry));
+	//if(!first) return -JE_MALOC;
+	
+	//first->next = NULL;
+	//first->nextdptrbid = cell->celldef->bid_entry;
+	//first->nextdptrbent = cell->celldef->bent;
+	
+	//first->bid = cell->celldef->bid_entry;
+	//first->bent = cell->celldef->bent;
+	
+	//resolve first
+	
+	_wdeb_load(L"first dptr bid = %u, first dptr bent = %u", cell->celldef->bid_entry, cell->celldef->bent);
+	
+	for(blk = table->data_ptr_list.first; blk; blk = blk->next){
+		if(blk->bid == cell->celldef->bid_entry){
+			first = &blk->entry[cell->celldef->bent];
+			_wdeb_load(L"first data block bid = %u, first data block ent = %u; first->nextdptrbid = %u, first->nextdptrbent = %u",
+				first->bid, first->bent, first->nextdptrbid,
+				first->nextdptrbent);
+			first->next = NULL;
+			break;				
+		}
+	}
+	
+	last = first;
 	while(last->nextdptrbid != JDB_ID_INVAL){
 		for(blk = table->data_ptr_list.first; blk; blk = blk->next){
 			if(last->nextdptrbid == blk->bid){
@@ -330,7 +378,7 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 		}
 	}
 
-	*list = first.next;
+	*list = first;
 
 	return 0;
 	

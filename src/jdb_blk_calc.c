@@ -28,7 +28,7 @@ jdb_bent_t _jdb_calc_bent(jdb_bsize_t blk_size, uint16_t ent_size,
 }
 
 size_t _jdb_data_len(struct jdb_handle *h, struct jdb_table * table,
-		      uchar dtype, uchar * base_type, size_t * base_len)
+		      jdb_data_t dtype, jdb_data_t * base_type, size_t * base_len)
 {
 
 	struct jdb_cell_data_blk *entry;

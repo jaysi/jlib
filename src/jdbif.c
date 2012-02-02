@@ -142,7 +142,7 @@ int jdbif_open2(struct jdb_handle *h)
 	wprintf(L"\tBIT2: read-only\n");
 	wprintf(L"\tBIT3: enable packing\n");
 	wprintf(L"\tBIT4: enable aio( NOT IMPLEMENTED NOW! )\n");
-	wprintf(L"\tBIT4: enable threaded-write\n");
+	wprintf(L"\tBIT5: enable threaded-write\n");
 
  get_bit_str:
 	flags = 0;

@@ -43,8 +43,8 @@ void jdbif_print_data(uchar* buf, size_t bufsize, jdb_data_t base){
 			}
 			break;
 		case JDB_TYPE_CHAR:
-		case JDB_TYPE_JCS:
-			wprintf(L"%s", buf);
+		case JDB_TYPE_JCS:			
+			wprintf(L"%s", (char*)buf);
 			break;
 		case JDB_TYPE_WIDE:
 			wprintf(L"%ls", (wchar_t*)buf);

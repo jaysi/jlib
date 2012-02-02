@@ -1,7 +1,15 @@
 #include "jdb.h"
 #include "jconst.h"
 
+#include <unistd.h>
+
 #define _wdeb_startup _wdeb
+
+/*
+#ifdef _WIN32
+#define sleep(sec) Sleep(1000*sec)
+#endif
+*/
 
 void _jdb_fill_date(uchar d[3], uchar t[3])
 {
@@ -494,9 +502,13 @@ int jdb_close(struct jdb_handle *h)
 	
 		_jdb_request_wr_thread_exit(h);	
 	
+	//	pthread_wait(h->wrthid);
+	
 		while(semval){
 			if(sem_getvalue(&h->wrsem, &semval) < 0) break;
+			#ifndef _WIN32
 			if(semval) sleep(1);
+			#endif
 		}
 	
 	}

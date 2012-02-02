@@ -4,6 +4,7 @@
 #define _wdeb_add	_wdeb
 #define _wdeb_find	_wdeb
 #define _wdeb_load	_wdeb
+#define _wdeb_crc	_wdeb
 
 static inline int _jdb_check_datalen(uchar dtype, uint32_t datalen)
 {
@@ -523,6 +524,8 @@ int jdb_create_cell(struct jdb_handle *h,
 
 	size_t base_len;
 	
+	if(dtype == JDB_TYPE_NULL) return -JE_TYPE;
+	
 	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;	
 
 	if (row > table->main.hdr.nrows) {
@@ -616,9 +619,24 @@ int jdb_create_cell(struct jdb_handle *h,
 
 		memcpy(cell->data, data, datalen);
 		
+		cell->celldef->data_crc32 = _jdb_crc32(cell->data, cell->celldef->datalen);
+		_wdeb_crc(L"celldata crc = 0x%08x", cell->celldef->data_crc32);
 		
-		//#ret = fixed
+		//#ret = var
 		ret = 0;
+		
+		if(dtype < JDB_TYPE_NULL){
+			if(dtype <= JDB_TYPE_FIXED_BASE_END){
+				ret = 0;
+				
+			} else {
+				ret = 1;
+			}
+		} else {
+			if(typedef_entry->flags & JDB_TYPE_VAR) ret = 2;
+		}
+		
+		/*
 		if(dtype <= JDB_TYPE_FIXED_BASE_END){
 			ret = 1;
 		} else {
@@ -626,12 +644,18 @@ int jdb_create_cell(struct jdb_handle *h,
 			else if(typedef_entry->flags & JDB_TYPE_VAR) ret = 0;
 			else ret = 1;
 		}		
+		*/
 		
-		if(!ret){
-
+		if(ret){
+			/*
+			if(ret == 1){//var-base type
+				
+			} else if(ret == 2){//var-extended type
+				
+			}
+			*/
 			ret = _jdb_alloc_cell_data(	h, table, cell,
-							typedef_blk,
-							typedef_entry,
+							dtype,
 							data,
 							datalen, 1);
 		

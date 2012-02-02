@@ -422,7 +422,7 @@ int jdb_list_tables(struct jdb_handle *h, jcslist_entry ** list, jdb_bid_t * n)
 	jdb_bid_t *bid, i;
 
 	struct jdb_table table;
-
+	
 	ret =
 	    _jdb_list_map_match(h, JDB_BTYPE_TABLE_DEF, 0, 0, 0,
 				JDB_MAP_CMP_BTYPE, &bid, n);

@@ -46,7 +46,7 @@ void jdbif_dump_dptr(struct jdb_handle* h, struct jdb_cell_data_ptr_blk_entry *d
 }
 void jdbif_dump_cell_dptr(struct jdb_handle* h, struct jdb_cell* cell){
 	struct jdb_cell_data_ptr_blk_entry *dptr;
-	int i;
+	int i = 0;
 	dptr = cell->dptr;
 	wprintf(L"Data pointer list ( BID:FirstEnt:NoEnt:NextDptrBID:NextDptrEnt ){\n");
 	while(dptr){
@@ -106,7 +106,7 @@ void jdbif_add_cell(struct jdb_handle* h){
 			return;
 		}
 		wprintf(L"data: ");
-		wscanf(L"%ls", data);
+		wscanf(L"%s", data);
 	}
 	wprintf(L"data_type: ");
 	wscanf(L"%i", &ret);
@@ -174,7 +174,7 @@ int jdb_load_cell(struct jdb_handle *h, wchar_t * table_name,
 		uint32_t col, uint32_t row, uchar** data,
 		uint32_t* datalen, uchar* data_type, int* unsign){
 */
-	ret = jdb_load_cell(h, table_name, col, row, &data, &datalen, &data_type);	
+	ret = jdb_load_cell(h, table_name, col, row, &data, &datalen, &data_type);
 	
 	if(ret < 0 && ret != -JE_EXISTS){
 		wprintf(L"[FAIL]\n");
