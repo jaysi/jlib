@@ -1,11 +1,12 @@
 #include "jdb.h"
 
 #define _wdeb_map(f, a...)
-#define _wdeb_nful(f, a...)
+#define _wdeb_nful _wdeb
 #define _wdeb_list_map(f, a...)
 #define _wdeb_find	_wdeb
 #define _wdeb_inc _wdeb
 #define _wdeb_tm _wdeb
+#define _wdeb_rm _wdeb
 
 jdb_bent_t _jdb_max_nful(struct jdb_handle * h, jdb_blk_t btype)
 {
@@ -205,12 +206,12 @@ int _jdb_inc_map_nful_by_bid(struct jdb_handle *h, jdb_bid_t bid, jdb_bent_t n)
 			map_bent = bid - map->bid - 1;
 
 			_wdeb_nful
-			    (L"found bid @ map %u[%u]: %u, blk_type: %x, dtype: %x, nful: %u",
+			    (L"found bid @ map %u[%u]: %u, blk_type: %x, dtype: %x, nful: %u, adding by %u",
 			     map->bid,
 			     map_bent,
 			     map->entry[map_bent].blk_type,
 			     map->entry[map_bent].dtype,
-			     map->entry[map_bent].nful);
+			     map->entry[map_bent].nful, n);
 			map->entry[map_bent].nful+=n;
 			map->write++;
 			return 0;
@@ -384,7 +385,9 @@ int _jdb_rm_map_bid_entries(struct jdb_handle *h, jdb_bid_t * bid, jdb_bid_t n)
 	jdb_bid_t i, removed = 0UL;
 	//jdb_bid_t map_bid;
 	jdb_bent_t map_bent;
-
+	
+	_jdb_lock_handle(h);
+	
 	for (i = 0; i < n; i++) {
 		//map_bid = _jdb_calc_map_bid(bid[i], h->hdr.map_bent);
 		//map_bent = _jdb_calc_map_bent(bid[i], map_bid);
@@ -398,14 +401,38 @@ int _jdb_rm_map_bid_entries(struct jdb_handle *h, jdb_bid_t * bid, jdb_bid_t n)
 				removed++;
 				map->hdr.nset--;
 				map->write++;
+				h->hdr.nblocks--;
 				//break;
 		//	}
 		//}
 	}
+	
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);
 
 	if (removed == n)
 		return 0;
 	return -JE_NOTFOUND;
+}
+
+int _jdb_rm_map_bid_entry(struct jdb_handle *h, jdb_bid_t bid)
+{
+	struct jdb_map *map;	
+	jdb_bent_t map_bent;
+
+	map = _jdb_get_map_ptr_by_bid(h, bid);
+	if(!map) return -JE_NOTFOUND;
+	map_bent = bid - map->bid - 1;
+	map->entry[map_bent].blk_type = JDB_BTYPE_EMPTY;
+	map->hdr.nset--;
+	map->write++;
+	
+	_jdb_lock_handle(h);
+	h->hdr.nblocks--;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);
+	
+	return 0;	
 }
 
 jdb_bid_t _jdb_find_first_map_match(struct jdb_handle * h, jdb_blk_t btype,
@@ -635,3 +662,33 @@ int _jdb_map_chg_proc(struct jdb_handle* h, jdb_bid_t bid, struct jdb_table* tab
 	
 	return 0;
 }
+
+int _jdb_rm_map_entries_by_tid(struct jdb_handle *h, jdb_tid_t tid)
+{
+	struct jdb_map *map;
+	jdb_bent_t i;
+	jdb_bid_t removed = 0;
+
+	for (map = h->map_list.first; map; map = map->next) {
+		for (i = 0; i < h->hdr.map_bent; i++){
+			if (map->entry[i].tid == tid){
+				map->entry[i].blk_type = JDB_BTYPE_EMPTY;
+				map->hdr.nset--;
+				map->write++;
+				removed++;
+			}
+		}
+	}
+
+	_jdb_lock_handle(h);
+
+	_wdeb_rm(L"removed = %u", removed);
+
+	h->hdr.nblocks-=removed;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);		
+		
+	return 0;
+}
+

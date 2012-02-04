@@ -1,0 +1,7 @@
+CRASH:
+	open(new db)->add table->add cell->close table->open table->add cell-
+	>close table->CRASH! (cell->data seems problematic)
+
+HANG:
+	open(new db)->add table->add cell->close table->open table->add cell-
+	>sync table->listall cell->HANGS! (no dbg msg)

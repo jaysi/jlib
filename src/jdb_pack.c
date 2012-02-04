@@ -258,7 +258,7 @@ int _jdb_pack_table_def(struct jdb_handle* h, struct jdb_table_def_blk *blk,
 	}
 	
 	pos = sizeof(struct jdb_table_def_blk_hdr) + blk->hdr.namelen;
-	_wdeb_crc(L"pos is %u, namelen is %u, hsize is %u, HSIZE is %u, pad size is %u", pos, blk->hdr.namelen, sizeof(struct jdb_table_def_blk_hdr), JDB_TABLE_DEF_BLK_HDR_SIZE, h->hdr.blocksize - pos);
+	//_wdeb_crc(L"pos is %u, namelen is %u, hsize is %u, HSIZE is %u, pad size is %u", pos, blk->hdr.namelen, sizeof(struct jdb_table_def_blk_hdr), JDB_TABLE_DEF_BLK_HDR_SIZE, h->hdr.blocksize - pos);
 	memset(buf + pos, '\0', h->hdr.blocksize - pos);
 		
 	if(h->hdr.crc_type != JDB_CRC_NONE){

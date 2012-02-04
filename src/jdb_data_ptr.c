@@ -3,6 +3,7 @@
 
 #define _wdeb_data_ptr	_wdeb
 #define _wdeb_load	_wdeb
+#define _wdeb_find	_wdeb
 
 int _jdb_free_data_ptr_list(struct jdb_table *table)
 {
@@ -250,6 +251,7 @@ again:
 					n--;
 					
 					if(!n){
+						_wdeb_find(L"added in this block = %u", added_in_this_blk);
 						_jdb_inc_map_nful_by_bid(h, blk->bid, added_in_this_blk);// OnUse						
 						last->next = NULL;
 						last->nextdptrbid = JDB_ID_INVAL;
@@ -268,6 +270,7 @@ again:
 					}				
 				}
 			}
+			_wdeb_find(L"added in this block = %u", added_in_this_blk);
 			_jdb_inc_map_nful_by_bid(h, blk->bid, added_in_this_blk);// OnUse
 		}
 	}
@@ -385,6 +388,40 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 	
 }
 
+int _jdb_rm_dataptr_block(struct jdb_handle* h, struct jdb_table *table, jdb_bid_t bid){
+	struct jdb_cell_data_ptr_blk *prev, *del;
+	
+	del = table->data_ptr_list.first;
+	
+	while(del){
+		
+		if(del->bid == bid){
+			if(del->bid == table->data_ptr_list.first->bid){
+				table->data_ptr_list.first = table->data_ptr_list.first->next;
+				break;
+			} else if(del->bid == table->data_ptr_list.last->bid){
+				prev->next = NULL;
+				table->data_ptr_list.last = prev;
+				break;
+			} else {
+				prev->next = del->next;
+				break;
+			}
+		}
+		
+		prev = del;
+		del = del->next;
+	}
+	
+	if(!del) return -JE_NOTFOUND;
+			
+	free(del->entry);
+	free(del);
+	
+	return 0;
+	
+}
+
 int _jdb_rm_dptr_chain(		struct jdb_handle* h, struct jdb_table* table,
 				struct jdb_cell* cell,
 				jdb_bid_t bid, jdb_bent_t bent){
@@ -401,8 +438,16 @@ int _jdb_rm_dptr_chain(		struct jdb_handle* h, struct jdb_table* table,
 			if(last->nextdptrbid == blk->bid){
 				last = &blk->entry[last->nextdptrbent];
 				blk->entry[last->nextdptrbent].bid = JDB_ID_INVAL;
-				blk->nent--;
-				_jdb_dec_map_nful_by_bid(h, blk->bid, 1);
+				blk->nent--;				
+				
+				if(!blk->nent){
+					_jdb_rm_map_bid_entry(h, blk->bid);
+					_jdb_rm_dataptr_block(h, table, blk->bid);
+				} else {				
+					_JDB_SET_WR(h, blk, blk->bid, table, 1);
+					_jdb_dec_map_nful_by_bid(h, blk->bid, 1);
+				}
+				
 			}
 		}
 	}

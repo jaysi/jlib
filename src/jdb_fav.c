@@ -306,24 +306,67 @@ int _jdb_inc_fav(struct jdb_handle *h, struct jdb_table* table,
 
 }
 
+int _jdb_rm_fav_block(struct jdb_handle* h, struct jdb_table *table, jdb_bid_t bid){
+	struct jdb_fav_blk *prev, *del;
+	
+	del = table->fav_list.first;
+	
+	while(del){
+		
+		if(del->bid == bid){
+			if(del->bid == table->fav_list.first->bid){
+				table->fav_list.first = table->fav_list.first->next;
+				break;
+			} else if(del->bid == table->fav_list.last->bid){
+				prev->next = NULL;
+				table->fav_list.last = prev;
+				break;
+			} else {
+				prev->next = del->next;
+				break;
+			}
+		}
+		
+		prev = del;
+		del = del->next;
+	}
+	
+	if(!del) return -JE_NOTFOUND;
+			
+	free(del->entry);
+	free(del);
+	
+	return 0;
+	
+}
+
+
 int _jdb_rm_fav(struct jdb_handle *h, struct jdb_table* table, jdb_bid_t bid)
 {
 
 	struct jdb_fav_blk *blk;
 
 	struct jdb_fav_blk_entry *entry;
-
+	jdb_bent_t nful;
 	int ret;
 	
 	if ((ret = _jdb_find_fav(h, table, bid, &blk, &entry)) < 0)
 		return ret;
 
+	_jdb_dec_map_nful_by_bid(h, blk->bid, 1);
 	entry->bid = JDB_ID_INVAL;
+	
+	_jdb_get_map_nful_by_bid(h, blk->bid, &nful);
+	
+	if(!nful){
+		_jdb_rm_map_bid_entry(h, blk->bid);
+		_jdb_rm_fav_block(h, table, blk->bid);
+	} else {	
+		_JDB_SET_WR(h, blk, blk->bid, table, 1);
+		//blk->write = 1;
+	}
 
-	_JDB_SET_WR(h, blk, blk->bid, table, 1);
-	//blk->write = 1;
-
-	return _jdb_dec_map_nful_by_bid(h, blk->bid, 1);
+	return 0;
 
 }
 

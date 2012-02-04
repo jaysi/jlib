@@ -342,12 +342,6 @@ struct jdb_cell_list {
 	struct jdb_cell *last;
 };
 
-#define JDB_TABLE_DEF_BLK_HDR_SIZE (sizeof(uchar)+sizeof(uchar)+\
-				sizeof(uint16_t)+sizeof(jdb_tid_t)+\
-				sizeof(uint16_t)+sizeof(uint32_t)+\
-				sizeof(uint32_t)+sizeof(uint64_t)+\
-				sizeof(jdb_bid_t)+sizeof(uint32_t))
-
 struct jdb_table_def_blk_hdr {
 	uchar type;
 	uchar flags;

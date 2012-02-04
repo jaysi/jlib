@@ -114,7 +114,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	table->main.hdr.tid = tid;
 
-	table->main.hdr.ncells = 0;
+	table->main.hdr.ncells = 0UL;
 
 	table->main.hdr.ncol_typedef = 0UL;	
 
@@ -617,6 +617,7 @@ int jdb_close_table(struct jdb_handle *h, wchar_t * name)
 			if(entry == h->table_list.first){
 				h->table_list.first = h->table_list.first->next;
 			} else if(entry == h->table_list.last){
+				prev->next = NULL;
 				h->table_list.last = prev;
 			} else {
 				prev->next = entry->next;
@@ -645,9 +646,60 @@ int jdb_close_table(struct jdb_handle *h, wchar_t * name)
 }
 
 int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
-{
-	return -JE_IMPLEMENT;
+{	
+	int ret;
+	struct jdb_table* entry, *prev;
+	
+	prev = h->table_list.first;
+	entry = prev;
+
+	while(entry){
+	
+		if(!wcscmp(name, entry->main.name)){
+			if(entry == h->table_list.first){
+				h->table_list.first = h->table_list.first->next;
+			} else if(entry == h->table_list.last){
+				prev->next = NULL;
+				h->table_list.last = prev;
+			} else {
+				prev->next = entry->next;
+			}
+			h->table_list.cnt--;
+			break;
+		}
+	
+		prev = entry;
+		entry = entry->next;
+		
+	}
+	
+	if(!entry) return -JE_UNK;	
+	
+	_jdb_rm_map_entries_by_tid(h, _jdb_get_tid(name));
+	
+	_jdb_free_cell_list(entry); //put before everything
+	_jdb_free_typedef_list(entry);
+	_jdb_free_col_typedef_list(entry);
+	_jdb_free_data_ptr_list(entry);
+	_jdb_free_data_list(entry);
+	_jdb_free_celldef_list(entry);
+	_jdb_free_fav_list(entry);
+	_jdb_free_table_def(entry);	
+
+	_jdb_lock_handle(h);
+
+	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
+	
 	h->hdr.ntables--;
+	
+	//h->hdr.nblocks++;
+	//h->hdr.ndata_ptrs++;
+	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
+	_jdb_unlock_handle(h);			
+
+	
+	
+	return 0;
 }
 
 int _jdb_table_handle(struct jdb_handle* h, wchar_t* name, struct jdb_table** table){

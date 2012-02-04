@@ -284,7 +284,7 @@ static inline int _jdb_gimme_data_blk(struct jdb_handle* h, struct jdb_table* ta
 	return 0;
 		
 }
-
+/*
 int _jdb_rm_data(struct jdb_handle *h, struct jdb_table *table,
 	      struct jdb_cell_data_blk *blk, jdb_bent_t bent)
 {
@@ -298,6 +298,41 @@ int _jdb_rm_data(struct jdb_handle *h, struct jdb_table *table,
 
 	return _jdb_dec_map_nful_by_bid(h, blk->bid, 1);
 
+}
+*/
+int _jdb_rm_data_block(struct jdb_handle* h, struct jdb_table *table, jdb_bid_t bid){
+	struct jdb_cell_data_blk *prev, *del;
+	
+	del = table->data_list.first;
+	
+	while(del){
+		
+		if(del->bid == bid){
+			if(del->bid == table->data_list.first->bid){
+				table->data_list.first = table->data_list.first->next;
+				break;
+			} else if(del->bid == table->data_list.last->bid){
+				prev->next = NULL;
+				table->data_list.last = prev;
+				break;
+			} else {
+				prev->next = del->next;
+				break;
+			}
+		}
+		
+		prev = del;
+		del = del->next;
+	}
+	
+	if(!del) return -JE_NOTFOUND;
+		
+	free(del->bitmap);
+	free(del->datapool);
+	free(del);
+	
+	return 0;
+	
 }
 
 int _jdb_rm_data_seg(struct jdb_handle *h, struct jdb_table *table,
@@ -316,11 +351,17 @@ int _jdb_rm_data_seg(struct jdb_handle *h, struct jdb_table *table,
 		}
 	} else memset(blk->bitmap, '\0', blk->bmapsize);
 
-	if(nent != (jdb_bent_t)JDB_ID_INVAL) blk->nent-=nent;
+	if(nent != JDB_BENT_INVAL) blk->nent-=nent;
 	else blk->nent = 0;
-
-	_JDB_SET_WR(h, blk, blk->bid, table, 1);
-	//blk->write = 1;
+	
+	if(!blk->nent){
+		_jdb_rm_fav(h, table, blk->bid);
+		_jdb_rm_map_bid_entry(h, blk->bid);
+		return _jdb_rm_data_block(h, table, blk->bid);		
+	} else {
+		_JDB_SET_WR(h, blk, blk->bid, table, 1);
+		//blk->write = 1;
+	}	
 
 	return _jdb_set_map_nful_by_bid(h, blk->bid, blk->nent);
 	     
@@ -488,6 +529,8 @@ static inline int _jdb_alloc_cell_data_a_eq_1(struct jdb_handle *h, struct jdb_t
 
 	memset((void*)blk->bitmap, 0xff, blk->bmapsize);
 	memcpy((void*)blk->datapool, (void*)data, datalen);
+	
+	_jdb_set_map_nful_by_bid(h, blk->bid, blk->maxent);
 
 	blk->nent = blk->maxent;
 
@@ -701,7 +744,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 	jdb_bid_t bid, *bid_list, nbids, needed_full_blocks, first_dptr_bid;
 	size_t nchunks, pos, copysize;
 	int ret;
-	jdb_bent_t* blk_ent_list, blk_ent_ptr, dptr_needed;
+	jdb_bent_t* blk_ent_list, blk_ent_ptr, dptr_needed, nset;
 
 	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry, *dptr_last;
 	struct jdb_cell_data_blk* blk;
@@ -743,7 +786,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 				dtype, nentries, data, datalen);
 		
 	} else if(a < 1){
-
+		
 		return _jdb_alloc_cell_data_a_lt_1(h, table, cell,
 			dtype, nchunks, nentries, data, datalen, 1);
 				
@@ -778,6 +821,13 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 			ret = _jdb_gimme_data_blk(h, table, &blk, bid_list[bid]);
 			if(ret < 0){
 				//remove bid_list
+				/*
+				for(ret = 0; ret < bid; ret++){
+					if(!_jdb_gimme_data_blk(h, table, &blk, bid_list[ret])){
+						memset(blk->bitmap, '\0', blk->bmapsize);						
+					}
+				}
+				*/
 				return _jdb_rm_map_bid_entries(h, bid_list, bid);
 			}
 
@@ -865,7 +915,9 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 		
 			_wdeb_alloc(L"needed data ptrs %u", dptr_needed);
 			
-			ret = _jdb_create_dptr_chain(h, table, &dptr_list, dptr_needed, &first_dptr_bid, &first_dptr_bent);
+			ret = _jdb_create_dptr_chain(h, table, &dptr_list,
+						dptr_needed, &first_dptr_bid, 
+						&first_dptr_bent);
 			if(ret < 0){
 				free(blk_ent_list);
 				return ret;
@@ -881,15 +933,22 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 			dptr_last->nextdptrbid = first_dptr_bid;
 			dptr_last->nextdptrbent = first_dptr_bid;			
 
+			/* copy data to the block's datapool*/
+			pos = 0;
+			nset = 0;
 			for(ret = 0; ret < nentries; ret++){
-				if(!test_bit(blk->bitmap, ret)){			
+				if(!test_bit(blk->bitmap, ret)){
 					set_bit(blk->bitmap, ret);
-					memcpy(blk->datapool + ret*typelen, data + pos, typelen);
+					memcpy(blk->datapool + ret*typelen,
+						data + pos, typelen);
 					pos += typelen;
 					blk->nent++;
-				}
+					nset++;
+					if(nset == nchunks) break;			
+				}		
 			}
-			_jdb_inc_map_nful_by_bid(h, blk->bid, nentries);
+
+			_jdb_inc_map_nful_by_bid(h, blk->bid, blk->nent);
 
 			//cell->celldef->bid_entry = first_dptr_bid;
 			//cell->celldef->bent = first_dptr_bent;
@@ -897,6 +956,41 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 
 			dptr_entry = dptr_list;
 
+			for(ret = 0; ret < blk_ent_ptr; ret++){
+				_wdeb_alloc(L"blk_ent_list[%u] = %u", ret,
+						blk_ent_list[ret]);
+				if(!ret){//init
+					_wdeb_alloc(L"init dptr, bid = %u...",
+							blk->bid);
+					dptr_entry->bid = blk->bid;
+					dptr_entry->bent = blk_ent_list[0];
+					dptr_entry->nent = 1;
+				} else {
+					if(	blk_ent_list[ret-1] ==
+						(blk_ent_list[ret]-1)){
+						//continues
+						_wdeb_alloc(L"continues dptr...");
+						dptr_entry->nent++;
+						_wdeb_alloc(L"(nent++)dptr->bid = %u, nent = %u", dptr_entry->bid, dptr_entry->nent);
+					} else {//dptr entry chainging (GAP)
+						_wdeb(L"dptr entry chainging (GAP)");
+						dptr_entry = dptr_entry->next;
+						dptr_entry->bid = blk->bid;
+						_wdeb_alloc(L"(NEW)dptr->bid = %u", bid);
+						_JDB_SET_WR(h,
+							dptr_entry->parent,
+							dptr_entry->parent->bid,
+							table, 1);
+						dptr_entry->bent = blk_ent_list[ret];
+						dptr_entry->nent = 1;
+						
+					}
+				
+				}
+				
+			}
+
+/*
 			dptr_entry->bid = bid;
 			_JDB_SET_WR(h, dptr_entry->parent, dptr_entry->parent->bid, table, 1);
 			//*(dptr_entry->write) = 1;
@@ -920,7 +1014,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 					dptr_entry->bent = blk_ent_list[ret];
 				}
 			}
-			
+*/			
 			free(blk_ent_list);
 			
 			return 0;
@@ -969,6 +1063,7 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 		ret = _jdb_gimme_data_blk(h, table, &blk, cell->celldef->bid_entry);		
 		if(ret < 0){
 			free(cell->data);
+			cell->data = NULL;
 			return ret;		
 		}
 		
@@ -984,6 +1079,8 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 		_wdeb_crc(L"celldata crc is 0x%08x", _jdb_crc(cell->data, cell->celldef->datalen));
 		
 		if(_jdb_crc(cell->data, cell->celldef->datalen) != cell->celldef->data_crc32) return -JE_CRC;
+		
+		cell->data_stat = JDB_CELL_DATA_UPTODATE;
 		
 		return 0;
 		
@@ -1015,6 +1112,7 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 		ret = _jdb_gimme_data_blk(h, table, &blk, dptr_entry->bid);		
 		if(ret < 0){
 			free(cell->data);
+			cell->data = NULL;
 			return ret;		
 		}
 		
@@ -1053,6 +1151,8 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 	_wdeb_crc(L"celldata crc is 0x%08x", _jdb_crc(cell->data, cell->celldef->datalen));
 	
 	if(_jdb_crc(cell->data, cell->celldef->datalen) != cell->celldef->data_crc32) return -JE_CRC;
+	
+	cell->data_stat = JDB_CELL_DATA_UPTODATE;
 
 	return 0;
 

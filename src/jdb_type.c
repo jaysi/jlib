@@ -719,28 +719,68 @@ int jdb_add_typedef(struct jdb_handle *h, wchar_t* table_name,
 
 }
 
+int _jdb_rm_typedef_block(struct jdb_handle* h, struct jdb_table* table, jdb_bid_t bid){
+	struct jdb_typedef_blk *prev, *del;
+	
+	del = table->typedef_list.first;
+	
+	while(del){
+		
+		if(del->bid == bid){
+			if(del->bid == table->typedef_list.first->bid){
+				table->typedef_list.first = table->typedef_list.first->next;
+				break;
+			} else if(del->bid == table->typedef_list.last->bid){
+				prev->next = NULL;
+				table->typedef_list.last = prev;
+				break;
+			} else {
+				prev->next = del->next;
+				break;
+			}
+		}
+		
+		prev = del;
+		del = del->next;
+	}
+	
+	if(!del) return -JE_NOTFOUND;
+			
+	free(del->entry);
+	free(del);
+	
+	return 0;
+
+}
+
 int jdb_rm_typedef(struct jdb_handle *h, wchar_t* table_name, uchar type_id)
 {
-
 	struct jdb_typedef_blk *blk, blkv;
-
 	struct jdb_typedef_blk_entry *entry;
-
-	int ret;
-	
+	int ret;	
 	struct jdb_table *table;
+	jdb_bent_t nful;
 	
 	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;	
 
 	if ((ret = _jdb_find_typedef(h, table, type_id, &blk, &entry)) < 0)
 		return ret;
 
+	_jdb_dec_map_nful_by_bid(h, blk->bid, 1);
 	entry->type_id = JDB_TYPE_EMPTY;
+	
+	ret = _jdb_get_map_nful_by_bid(h, blk->bid, &nful);
+	if(ret < 0) nful = 1;
 
-	_JDB_SET_WR(h, blk, blk->bid, table, 1);
-	//blk->write = 1;
-
-	return _jdb_dec_map_nful_by_bid(h, blk->bid, 1);
+	if(!nful){
+		_jdb_rm_map_bid_entry(h, blk->bid);
+		_jdb_rm_typedef_block(h, table, blk->bid);
+	} else {	
+		_JDB_SET_WR(h, blk, blk->bid, table, 1);
+		//blk->write = 1		
+	}
+	
+	return 0;
 
 }
 
@@ -749,9 +789,7 @@ uchar jdb_find_col_type(struct jdb_handle * h, wchar_t* table_name,
 {
 
 	jdb_bent_t bent;
-
 	struct jdb_col_typedef *blk;
-	
 	struct jdb_table * table;
 
 	if(_jdb_table_handle(h, table_name, &table)<0) return JDB_TYPE_EMPTY;
@@ -779,19 +817,12 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 {
 
 	struct jdb_typedef_blk *typedef_blk;
-
 	struct jdb_typedef_blk_entry *typedef_entry;
-
 	struct jdb_col_typedef *blk;
-
 	struct jdb_col_typedef_blk_entry *col_typedef_entry;
-	
 	struct jdb_table *table;
-	
 	jdb_bid_t bid;
-
 	jdb_bent_t bent;
-
 	int ret;
 	
 	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;	
@@ -881,7 +912,11 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 
 			_JDB_SET_WR(h, blk, blk->bid, table, 1);
 			//blk->write = 1;
-
+			
+			table->main.hdr.ncol_typedef++;
+			
+			_JDB_SET_WR(h, &table->main, table->table_def_bid, table, 1);
+			
 			return 0;
 
 		}
@@ -891,19 +926,50 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 	
 }
 
+int _jdb_rm_col_typedef_block(struct jdb_handle* h, struct jdb_table *table, jdb_bid_t bid){
+	struct jdb_col_typedef *prev, *del;
+	
+	del = table->col_typedef_list.first;
+	
+	while(del){
+		
+		if(del->bid == bid){
+			if(del->bid == table->col_typedef_list.first->bid){
+				table->col_typedef_list.first = table->col_typedef_list.first->next;
+				break;
+			} else if(del->bid == table->col_typedef_list.last->bid){
+				prev->next = NULL;
+				table->col_typedef_list.last = prev;
+				break;
+			} else {
+				prev->next = del->next;
+				break;
+			}
+		}
+		
+		prev = del;
+		del = del->next;
+	}
+	
+	if(!del) return -JE_NOTFOUND;
+			
+	free(del->entry);
+	free(del);
+	
+	return 0;
+	
+}
+
+
 int jdb_rm_col_type(struct jdb_handle *h, wchar_t* table_name, uint32_t col)
 {
 
 	//struct jdb_typedef_blk* typedef_blk;
 	//struct jdb_typedef_blk_entry* typedef_entry;
 	struct jdb_col_typedef *blk;
-
 	struct jdb_col_typedef_blk_entry *entry;
-
 	jdb_bent_t bent;
-	
 	struct jdb_table *table;
-
 	int ret;
 	
 	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;	
@@ -925,10 +991,21 @@ int jdb_rm_col_type(struct jdb_handle *h, wchar_t* table_name, uint32_t col)
 					return ret;
 
 				blk->entry[bent].type_id = JDB_TYPE_EMPTY;
-
-				_JDB_SET_WR(h, blk, blk->bid, table, 1);
-				//blk->write = 1;
-
+				
+				_jdb_get_map_nful_by_bid(h, blk->bid, &bent);
+				
+				if(!bent){
+					_jdb_rm_map_bid_entry(h, blk->bid);
+					_jdb_rm_col_typedef_block(h, table, blk->bid);
+				} else {
+					_JDB_SET_WR(h, blk, blk->bid, table, 1);
+					//blk->write = 1;
+				}
+				
+				table->main.hdr.ncol_typedef--;
+				
+				_JDB_SET_WR(h, &table->main, table->table_def_bid, table, 1);
+				
 				return 0;
 
 			}
@@ -959,3 +1036,4 @@ void _jdb_free_typedef_list(struct jdb_table *table)
 	}
 
 }
+

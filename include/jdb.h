@@ -286,13 +286,6 @@ extern "C" {
 	int jdb_list_cells(struct jdb_handle* h, wchar_t* table_name,
 			uint32_t col, uint32_t row,
 			uint32_t** li_col, uint32_t** li_row, uint32_t* n);
-/*
-	list functions
-*/	
-	int jdb_list_rows(struct jdb_handle* h, wchar_t* table_name,
-			struct jdb_filter* filter, uint32_t nfilter,
-			uint32_t** row_id,
-			uint32_t* n);
 
 /*
 	table col-row acts
@@ -311,7 +304,7 @@ extern "C" {
 	int jdb_swap_row(struct jdb_handle* h, wchar_t* table, uint32_t row1,
 			uint32_t row2);
 /*
-	filters
+	filters, lists
 */
 	int jdb_init_filter(	struct jdb_filter* filter, size_t n,
 				uint32_t col_start,

@@ -523,6 +523,7 @@ int jss_rm(struct jss_handle *h, uint32_t id)
 	if (rec->hdr.id == h->rec_list->first->hdr.id) {
 		h->rec_list->first = h->rec_list->first->next;
 	} else if (rec->hdr.id == h->rec_list->last->hdr.id) {
+		prev->next = NULL;
 		h->rec_list->last = prev;
 	} else {
 		prev->next = rec->next;

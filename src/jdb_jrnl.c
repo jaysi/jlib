@@ -7,6 +7,8 @@
 
 #include "jdb.h"
 
+#define _wdeb_start _wdeb
+
 void* _jdb_jrnl_thread(void* arg){
 	struct jdb_handle* h = (struct jdb_handle*)arg;
 	int oldcancelstate;
@@ -14,6 +16,8 @@ void* _jdb_jrnl_thread(void* arg){
 	jdb_bid_t i, pos;
 	
 	//EXIT: if !bufsize
+	
+	_wdeb_start(L"journal thread started...");
 	
 	while(1){
 		_wait_sem(&h->jsem);

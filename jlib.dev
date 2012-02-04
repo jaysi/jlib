@@ -28,8 +28,8 @@ CustomMakefile=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
-CompilerSettings=000000000000000000100000000
-UnitCount=61
+CompilerSettings=000000000000000010100000000
+UnitCount=63
 
 [VersionInfo]
 Major=1
@@ -656,6 +656,24 @@ CompileCpp=0
 Folder=hash
 Compile=1
 Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit62]
+FileName=BUGS
+Folder=jlib
+Compile=0
+Link=0
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit63]
+FileName=README
+Folder=jlib
+Compile=0
+Link=0
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=

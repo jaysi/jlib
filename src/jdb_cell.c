@@ -5,6 +5,7 @@
 #define _wdeb_find	_wdeb
 #define _wdeb_load	_wdeb
 #define _wdeb_crc	_wdeb
+#define _wdeb_free	_wdeb
 
 static inline int _jdb_check_datalen(uchar dtype, uint32_t datalen)
 {
@@ -191,7 +192,7 @@ int _jdb_load_celldef(struct jdb_handle *h, struct jdb_table *table)
 
 		return ret;
 
-	}
+	}	
 
 	for (i = 0; i < n; i++) {
 
@@ -404,23 +405,42 @@ _jdb_add_celldef(struct jdb_handle *h,
 {
 
 	jdb_bent_t bent;
-
+	jdb_bid_t bid;
 	int ret;
 
-	for (*blk = table->celldef_list.first; *blk; *blk = (*blk)->next) {
+	//for (*blk = table->celldef_list.first; *blk; *blk = (*blk)->next) {
+		
+	bid = _jdb_find_first_map_match(h, JDB_BTYPE_CELLDEF, 0,
+					table->main.hdr.tid,
+					h->hdr.celldef_bent - 1,
+					JDB_MAP_CMP_BTYPE | JDB_MAP_CMP_TID |
+					JDB_MAP_CMP_NFUL);
+					
+	if(bid == JDB_ID_INVAL) {
+		*blk = NULL;
+		goto createnew;
+	}
+	
+	for(*blk = table->celldef_list.first; *blk; *blk = (*blk)->next){
+		if((*blk)->bid == bid) break;
+	}
+	
+	if(!(*blk)) return -JE_CORRUPT;
+						
+	for (bent = 0; bent < h->hdr.celldef_bent; bent++) {
 
-		for (bent = 0; bent < h->hdr.celldef_bent; bent++) {
-
-			if ((*blk)->entry[bent].row == JDB_ID_INVAL
-			    || (*blk)->entry[bent].col == JDB_ID_INVAL) {				
-				_wdeb_find(L"found empty celldef @ BID:%u:BENT:%u", (*blk)->bid, bent);
-				break;
-
-			}
+		if ((*blk)->entry[bent].row == JDB_ID_INVAL
+		    || (*blk)->entry[bent].col == JDB_ID_INVAL) {				
+			_wdeb_find(L"found empty celldef @ BID:%u:BENT:%u", (*blk)->bid, bent);
+			break;
 
 		}
 
 	}
+
+	//}
+	
+createnew:	
 
 	if (!(*blk)) {
 		_wdeb_find(L"creating celldef");
@@ -464,6 +484,41 @@ _jdb_add_celldef(struct jdb_handle *h,
 
 }
 
+int _jdb_rm_celldef_block(struct jdb_handle* h, struct jdb_table *table, jdb_bid_t bid){
+	struct jdb_celldef_blk *prev, *del;
+	
+	del = table->celldef_list.first;
+	
+	while(del){
+		
+		if(del->bid == bid){
+			if(del->bid == table->celldef_list.first->bid){
+				table->celldef_list.first = table->celldef_list.first->next;
+				break;
+			} else if(del->bid == table->celldef_list.last->bid){
+				prev->next = NULL;
+				table->celldef_list.last = prev;
+				break;
+			} else {
+				prev->next = del->next;
+				break;
+			}
+		}
+		
+		prev = del;
+		del = del->next;
+	}
+	
+	if(!del) return -JE_NOTFOUND;
+			
+	free(del->entry);
+	free(del);
+	
+	return 0;
+	
+}
+
+
 int
 _jdb_rm_celldef(struct jdb_handle *h, struct jdb_table *table,
 		uint32_t row, uint32_t col)
@@ -473,7 +528,7 @@ _jdb_rm_celldef(struct jdb_handle *h, struct jdb_table *table,
 
 	struct jdb_celldef_blk_entry *entry;
 
-	jdb_bent_t bent;
+	jdb_bent_t bent, nful;
 
 	int ret;
 
@@ -487,10 +542,19 @@ _jdb_rm_celldef(struct jdb_handle *h, struct jdb_table *table,
 				_jdb_dec_map_nful_by_bid(h, blk->bid, 1);
 
 				blk->entry[bent].row = JDB_ID_INVAL;
-
-				_JDB_SET_WR(h, blk, blk->bid, table, 1);
+				
 				//blk->write = 1;
-
+				
+				ret = _jdb_get_map_nful_by_bid(h, blk->bid, &nful);
+				if(ret < 0) return ret;
+				
+				if(!nful){
+					_jdb_rm_map_bid_entry(h, blk->bid);
+					_jdb_rm_celldef_block(h, table, blk->bid);					
+				} else {				
+					_JDB_SET_WR(h, blk, blk->bid, table, 1);
+				}
+				
 				return 0;
 
 			}
@@ -644,7 +708,7 @@ int jdb_create_cell(struct jdb_handle *h,
 			else if(typedef_entry->flags & JDB_TYPE_VAR) ret = 0;
 			else ret = 1;
 		}		
-		*/
+		*/		
 		
 		if(ret){
 			/*
@@ -660,7 +724,7 @@ int jdb_create_cell(struct jdb_handle *h,
 							datalen, 1);
 		
 			if(ret < 0){
-				free(cell->data);
+				free(cell->data);				
 				free(cell);
 				_wdeb_add(L"removing celldef");
 				_jdb_rm_celldef(h, table, row, col);
@@ -703,6 +767,8 @@ int jdb_create_cell(struct jdb_handle *h,
 		table->cell_list.last = cell;
 		table->cell_list.cnt++;
 	}
+
+	table->main.hdr.ncells++;
 
 	return ret;
 
@@ -755,7 +821,13 @@ int jdb_load_cell(struct jdb_handle *h, wchar_t* table_name,
 }
 
 void _jdb_free_cell(struct jdb_cell* cell){
-	if(cell->celldef->datalen) free(cell->data);
+	_wdeb_free(L"freeing cell %u:%u, datalen: %u, datastat = %i, data is %s",
+			cell->celldef->col, cell->celldef->row,
+			cell->celldef->datalen, cell->data_stat, cell->data);
+	if(cell->celldef->datalen && cell->data_stat != JDB_CELL_DATA_NOTLOADED && cell->data){		
+		free(cell->data);
+	}
+	_wdeb_free(L"done freeing");
 }
 
 int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
@@ -778,6 +850,7 @@ int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
 			if(cell == table->cell_list.first){
 				table->cell_list.first = table->cell_list.first->next;
 			} else if(cell == table->cell_list.last){
+				prev->next = NULL;
 				table->cell_list.last = prev;
 			} else {
 				prev->next = cell->next;
@@ -795,7 +868,7 @@ int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
 		next_dptr_bent = cell->celldef->bent;
 		_jdb_rm_celldef(h, table, cell->celldef->row, cell->celldef->col);
 		//free data
-		if(cell->celldef->datalen) free(cell->data);
+		_jdb_free_cell(cell);
 		//remove data segments
 		_jdb_rm_data_seg(h, table, cell->celldef->bid_entry, cell->celldef->bent, 1);
 		for(dptr = cell->dptr; dptr; dptr = dptr->next){
@@ -806,6 +879,9 @@ int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
 		//cell->dptr = NULL;
 		
 		_jdb_free_cell(cell);
+		
+		table->main.hdr.ncells--;
+		
 		return 0;
 	}
 	
@@ -828,9 +904,25 @@ int jdb_update_cell(struct jdb_handle *h, wchar_t * table_name,
 	return -JE_IMPLEMENT;
 }		    					
 
-void _jdb_free_cell_list(struct jdb_table* table){
-	return;
+void _jdb_free_cell_list(struct jdb_table *table)
+{
+
+	struct jdb_cell* del;
+
+	while (table->cell_list.first) {
+
+		del = table->cell_list.first;
+
+		table->cell_list.first = table->cell_list.first->next;
+
+		_jdb_free_cell(del);
+
+		free(del);
+
+	}
+
 }
+
 
 
 //set row or col to JDB_ID_INVAL for all matches
