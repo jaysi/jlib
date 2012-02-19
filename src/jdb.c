@@ -72,6 +72,18 @@ uint16_t _jdb_get_handle_flag(struct jdb_handle *h, int lock)
 	return flags;
 }
 
+uint64_t _jdb_get_chid(struct jdb_handle *h, int lock)
+{
+	uint64_t chid;
+	if (lock)
+		_jdb_lock_handle(h);
+	chid = h->hdr.chid++;	
+	if (lock)
+		_jdb_unlock_handle(h);
+		
+	return chid;
+}
+
 //header IO functions has been placed to jdb_block.c
 
 void _jdb_calc_bentries(struct jdb_handle *h)
@@ -143,6 +155,8 @@ int jdb_init(struct jdb_handle *h)
 	h->fd = -1;
 
 	h->flags = 0;
+	
+	h->jopid = 0UL;
 
 	memset(&h->hdr, 0, sizeof(struct jdb_hdr));
 
@@ -185,7 +199,7 @@ static inline int _jdb_fill_def_conf(struct jdb_conf *conf)
 	conf->blocksize = JDB_DEF_BLK_SIZE;
 	conf->max_blocks = JDB_ID_INVAL;
 
-/*	
+/*
 	conf->filename = (wchar_t*)malloc(WBYTES(JDB_DEF_FILENAME));
 	wcscpy(conf->filename, JDB_DEF_FILENAME);
 	conf->key = (wchar_t*)malloc(WBYTES(JDB_DEF_KEY));
@@ -203,16 +217,26 @@ static inline int _jdb_fill_def_conf(struct jdb_conf *conf)
 int _jdb_init_crypto(struct jdb_handle *h)
 {
 
-	uchar aes_key[32];
+	uchar key[32];
+	//uchar des3_key[24]; //3x8byte keys
+	
+	rc4_init((uchar *) h->conf.key, WBYTES(h->conf.key), &h->rc4);
 
 	switch (h->conf.crypt_type) {
 	case JDB_CRYPT_NONE:
 		return 0;
 	case JDB_CRYPT_AES:
-		sha256((uchar *) h->conf.key, WBYTES(h->conf.key), aes_key);
-		aes_set_key(&h->aes, (uchar *) aes_key, 256);
+		sha256((uchar *) h->conf.key, WBYTES(h->conf.key), key);
+		if(aes_set_key(&h->aes, (uchar *) key, 256)) return -JE_CRYPT;
 		return 0;
 		break;
+	case JDB_CRYPT_DES3:
+		sha256((uchar *) h->conf.key, WBYTES(h->conf.key), key);
+		if(des3_set_3keys(&h->des3, (uchar *)key,
+			(uchar *)key + DES3_KSIZE,
+			(uchar *)key + (2*DES3_KSIZE))) return -JE_CRYPT;
+		return 0;
+		break;		
 	default:
 		_wdeb_startup(L"unknown encryption 0x%x", h->conf.crypt_type);
 
@@ -287,7 +311,7 @@ int _jdb_create(struct jdb_handle *h)
 	   h->hdr.nblocks = 0;
 	   h->hdr.nmaps = 0;
 	   h->hdr.ntables = 0;
-	   h->hdr.nwr = 0;
+	   h->hdr.nchid = 0;
 	 */
 
 	_jdb_calc_bentries(h);
@@ -389,8 +413,6 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 //      wcstombs(filename, conf->filename, J_MAX_PATHNAME8);       
 //      ret = access(filename, F_OK);
 
-
-
 	if (default_conf) {
 		_wdeb_startup(L"using default config...");
 		_jdb_fill_def_conf(&h->conf);
@@ -427,7 +449,7 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 	}
 
 	_jdb_copy_conf_to_hdr(h);
-	
+		
 	if(h->hdr.flags & JDB_O_WR_THREAD){
 		ret = _jdb_init_wr_thread(h);
 	}
@@ -443,6 +465,15 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 		_wdeb_startup(L"openning jdb < %ls >", h->conf.filename);
 		ret = _jdb_open(h);
 	}
+	
+	if(!ret){		
+		//journalling
+		ret = _jdb_jrnl_open(h);
+		if(ret == -JE_EXISTS){
+			ret = _jdb_jrnl_recover(h);
+		}	
+	}
+	
 	_wdeb_startup(L"returned %i, flags are 0x%04x", ret, h->hdr.flags);
 	
 	if(ret < 0)

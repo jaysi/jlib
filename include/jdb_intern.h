@@ -86,7 +86,7 @@ struct jdb_hdr {
 	jdb_bid_t nblocks;	//number of blocks
 	jdb_bid_t nmaps;	//number of map blocks
 	jdb_tid_t ntables;
-	uint64_t nwr;		//total number of write requests
+	uint64_t nchid;		//change id
 	
 	uchar pwhash[PWHASHSIZE];	/*sha256 */
 	
@@ -109,7 +109,7 @@ struct jdb_hdr {
 #define JDB_BTYPE_CELL_DATA_PTR	0x09
 #define JDB_BTYPE_INDEX		0x0a
 #define JDB_BTYPE_TABLE_FAV	0x0b	/*block-rating*/
-#define JDB_BTYPE_TID_INDEX	0x0c	/*TID-TableNameHash index, uses type 0 indexes*/
+#define JDB_BTYPE_INDEX		0x0c	/*index, see map_entry's dtype field*/
 #define JDB_BTYPE_VOID		0xff	/*void blocks type, mainly for
 					   memmory allocations */
 
@@ -420,13 +420,19 @@ struct jdb_fav_blk_list{
 
 /*				indexes					*/
 
+//index types, set as map_entry's dtype field, length same as jdb_data_t
+#define JDB_ITYPE0	0x00
+#define JDB_ITYPE1	0x01
+#define JDB_ITYPE2	0x02
+
 /*
-	index type 0, hash -> id
+	index type 0 (GLOBAL-UNIQUE), hash -> id
 	Usage:
 		TableNameHash -> TableID	TID_INX
+		Allows table renaming.
 */
 
-struct jdb_index0_blk_hdr{
+struct jdb_index_blk_hdr{
 
 	uchar type;
 	uchar flags;
@@ -442,7 +448,7 @@ struct jdb_index0_blk_entry{
 struct jdb_index0_blk{
 	uint32_t write;
 	jdb_bid_t bid;
-	struct jdb_index0_blk_hdr hdr;
+	struct jdb_index_blk_hdr hdr;
 	struct jdb_index0_blk_entry* entry;
 	struct jdb_index0_blk* next;
 };
@@ -454,18 +460,17 @@ struct jdb_index0_blk_list{
 
 };
 
-#define JDB_ITYPE_INDEX1		0x01	//exact cell vdata index
-
-struct jdb_index1_blk_hdr {
-	uchar type;
-	uchar flags;
-
-	uint32_t crc32;
-}__attribute__((packed));
+/*
+	index type 1 (LOCAL-UNIQUE), hash -> row, col
+	Usage:
+		FullDataHash -> Row, Column
+		
+		Allows fast data search
+		limitations are support for exact data match only
+*/
 
 struct jdb_index1_blk_entry {
-	uint64_t hash64;
-	jdb_tid_t tid;
+	uint64_t hash64;	
 	uint32_t row;
 	uint32_t col;
 }__attribute__((packed));
@@ -474,7 +479,7 @@ struct jdb_index1 {
 	uint32_t write;
 
 	struct jdb_table *table;
-	struct jdb_index1_blk_hdr hdr;
+	struct jdb_index_blk_hdr hdr;
 	struct jdb_index1_blk_entry *entry;
 	struct jdb_index1 *next;
 };
@@ -484,6 +489,39 @@ struct jdb_index1_list {
 	struct jdb_index1 *first;
 	struct jdb_index1 *last;
 };
+
+/*
+	index type 2 (LOCAL-NON_UNIQUE), hash -> row, col
+	Usage:
+		DataHash -> Row, Column
+		
+		Allows fast data search even for parts of data in a cell
+		May return multiple results, Same record may not exist in
+		a table, thus insertion is SLOW due to needed searches
+*/
+
+struct jdb_index2_blk_entry {
+	uint32_t hash32;	
+	uint32_t row;
+	uint32_t col;
+}__attribute__((packed));
+
+struct jdb_index2 {
+	uint32_t write;
+
+	struct jdb_table *table;
+	struct jdb_index_blk_hdr hdr;
+	struct jdb_index2_blk_entry *entry;
+	struct jdb_index2 *next;
+};
+
+struct jdb_index2_list {
+	jdb_bid_t cnt;
+	struct jdb_index2 *first;
+	struct jdb_index2 *last;
+};
+
+/*			Table-Definition			*/
 
 struct jdb_table {
 	jdb_bid_t table_def_bid;
@@ -498,6 +536,7 @@ struct jdb_table {
 	struct jdb_celldef_list celldef_list;
 	struct jdb_cell_list cell_list;
 	struct jdb_index1_list index1_list;
+	struct jdb_index2_list index2_list;
 	struct jdb_cell_data_ptr_list data_ptr_list;
 	struct jdb_cell_data_list data_list;
 	struct jdb_fav_blk_list fav_list;
@@ -509,80 +548,6 @@ struct jdb_table_list {
 	struct jdb_table *first;
 	struct jdb_table *last;
 };
-
-struct jdb_wr_fifo_entry{
-	jdb_bid_t nblocks;
-	jdb_bid_t* bid_list;
-	uint32_t bufsize;
-	uchar* hdrbuf;
-	uchar* buf;
-	struct jdb_wr_fifo_entry* next;
-};
-
-struct jdb_wr_fifo{
-	uint32_t cnt;
-	struct jdb_wr_fifo_entry* first, *last;
-};
-
-struct jdb_jrnl_fifo_entry{
-	/*
-	uchar cmd;
-	uint32_t nargs;
-	uint32_t* arg_size;
-	uchar* arg;
-	*/
-	size_t bufsize;
-	uchar* buf;
-	struct jdb_jrnl_fifo_entry* next;
-};
-
-struct jdb_jrnl_fifo{
-	uint32_t cnt;
-	struct jdb_jrnl_fifo_entry* first, *last;
-};
-
-
-/*
-	JOURNALLing
-		begin_record> REC_SIZE:OP_ID:EDIT_COMMAND:NARGS:ARG_SIZE_LIST:ARG_LIST
-		end_record> REC_SIZE:OP_ID:END_COMMAND
-		
-		*every begin_record MUST have a matching end_record to ensure
-		the operation has been finished successfully
-			
-*/
-
-//open
-#define JDB_CMD_OPEN			0x00
-
-//table
-#define JDB_CMD_CREATE_TABLE		0x01
-#define JDB_CMD_RM_TABLE		0x02
-
-//type
-#define JDB_CMD_ADD_TYPEDEF		0x10
-#define JDB_CMD_RM_TYPEDEF		0x11
-#define JDB_CMD_ASSIGN_COLTYPE		0x12
-
-//cell
-#define JDB_CMD_ADD_CELL		0x20
-#define JDB_CMD_RM_CELL		0x21
-#define JDB_CMD_UPDATE_CELL		0x22
-
-//row/col ops
-#define JDB_CMD_RM_COL			0x30
-#define JDB_CMD_INSERT_COL		0x31
-#define JDB_CMD_RM_ROW			0x32
-#define JDB_CMD_INSERT_ROW		0x33
-#define JDB_CMD_SWAP_COL		0x34
-#define JDB_CMD_SWAP_ROW		0x35
-
-//endings
-#define JDB_CMD_CLOSE			0x40	//closing file
-#define JDB_CMD_END			0x41	//operation ends
-
-//exit
-#define JDB_CMD_EXIT			0xff
 
 /*
 	init / cleanup
@@ -784,13 +749,60 @@ int _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 		     struct jdb_cell *cell, jdb_data_t dtype,
 		     uchar* data, size_t datalen, int first);
 		     
-void _jdb_free_celldef_list(struct jdb_table *table);		     
+void _jdb_free_celldef_list(struct jdb_table *table);
+int _jdb_create_dptr_chain(struct jdb_handle* h, struct jdb_table* table,
+				struct jdb_cell_data_ptr_blk_entry** list,
+				jdb_bid_t needed,
+				jdb_bid_t* first_bid, jdb_bent_t* first_bent);
+int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
+				struct jdb_cell* cell,
+				struct jdb_cell_data_ptr_blk_entry** list);
+int _jdb_free_data_ptr_list(struct jdb_table *table);						     
 
 /*
 	search
 */
 int _jdb_table_handle(struct jdb_handle* h, wchar_t* name, struct jdb_table** table);
 
+int _jdb_init_wr_thread(struct jdb_handle* h);
+int _jdb_request_wr_thread_exit(struct jdb_handle* h);
+int jdb_sync_table(struct jdb_handle *h, wchar_t * name);
+int _jdb_unpack_data_ptr(struct jdb_handle* h, struct jdb_cell_data_ptr_blk *blk,
+			uchar* buf);
+int _jdb_pack_data_ptr(struct jdb_handle* h, struct jdb_cell_data_ptr_blk *blk,
+			uchar* buf);
+int _jdb_unpack_fav(struct jdb_handle* h, struct jdb_fav_blk *blk,
+			uchar * buf);
+int _jdb_pack_fav(struct jdb_handle* h, struct jdb_fav_blk *blk,
+			uchar * buf);
+int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jdb_cell* cell);
+int _jdb_rm_map_entries_by_tid(struct jdb_handle *h, jdb_tid_t tid);
+int _jdb_rm_map_bid_entry(struct jdb_handle *h, jdb_bid_t bid);
+int _jdb_add_fdata(struct jdb_handle *h, struct jdb_table *table, uchar dtype,
+			uchar * data, jdb_bid_t* databid, jdb_bent_t* databent);
+int _jdb_rm_data_seg(struct jdb_handle *h, struct jdb_table *table,
+	      jdb_bid_t bid, jdb_bent_t bent, jdb_bent_t nent);															
+int _jdb_rm_dptr_chain(		struct jdb_handle* h, struct jdb_table* table,
+				struct jdb_cell* cell,
+				jdb_bid_t bid, jdb_bent_t bent);
+int _jdb_rm_fav(struct jdb_handle *h, struct jdb_table* table, jdb_bid_t bid);
+int _jdb_typedef_flags_by_ptr(struct jdb_handle* h, struct jdb_table *table, jdb_data_t type_id, uchar* flags);
+int _jdb_inc_fav(struct jdb_handle *h, struct jdb_table* table,
+		    jdb_bid_t bid);
+int _jdb_write_data_ptr_blk(struct jdb_handle *h, struct jdb_cell_data_ptr_blk *blk);
+int _jdb_read_data_ptr_blk(struct jdb_handle *h, struct jdb_cell_data_ptr_blk *blk);
+int _jdb_load_celldef(struct jdb_handle *h, struct jdb_table *table);
+int _jdb_load_data_ptr(struct jdb_handle *h, struct jdb_table *table);
+int _jdb_load_fav(struct jdb_handle *h, struct jdb_table *table);
+int _jdb_load_fav_blocks(struct jdb_handle* h, struct jdb_table* table);
+void _jdb_free_fav_list(struct jdb_table *table);
+int _jdb_load_cells(struct jdb_handle *h, struct jdb_table *table, int loaddata);
+int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table);
+int _jdb_hdr_to_buf(struct jdb_handle* h, uchar** buf, int alloc);
+		    
+int _jdb_jrnl_reg(struct jdb_handle* h, uint64_t chid , uchar cmd, int ret, uchar nargs, size_t* argsize, ...);
+int _jdb_jrnl_recover(struct jdb_handle* h);
+int _jdb_jrnl_reg_end(struct jdb_handle* h, uint64_t chid, int ret);			
 
 /*
 	MACROs

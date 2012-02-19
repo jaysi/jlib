@@ -21,6 +21,8 @@
 #define JE_PIPE		12
 #define JE_HCRC		13	//header crc
 #define JE_CORRUPT	14	//corrupted
+#define JE_JOURNAL	15
+#define JE_NOJOURNAL	16
 
 /*user management*/
 #define JE_NOGROUP	20

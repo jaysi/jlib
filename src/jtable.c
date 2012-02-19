@@ -7,6 +7,7 @@
 #include "jcs.h"
 #include "debug.h"
 #include "jtable.h"
+#include "hardio.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -970,9 +971,8 @@ uint32_t *jt_list_rows(struct jt_table * table,
 {
 
 	uint32_t row;
-	struct jt_cell *cell, *first_cell, *last_cell, *test_cell;
+	struct jt_cell *cell, *first_cell, *last_cell;
 	uint32_t *row_list;
-	register int already_set;
 
 	jt_sort_table(table);
 
@@ -1306,7 +1306,6 @@ int jt_file_to_table(struct jt_table *table, uint32_t id, wchar_t * filename,
 		     uchar delim)
 {
 	int fd;
-	ssize_t red, total;
 	char *fname;
 	uchar *buf;
 	struct stat s;

@@ -4,18 +4,25 @@
 #define _wdeb_data_ptr	_wdeb
 #define _wdeb_load	_wdeb
 #define _wdeb_find	_wdeb
+#define _wdeb_free	_wdeb
 
 int _jdb_free_data_ptr_list(struct jdb_table *table)
 {
-	struct jdb_cell_data_ptr_blk *data_ptr;
-
-	while (table->data_ptr_list.first) {
-		data_ptr = table->data_ptr_list.first;
-		table->data_ptr_list.first = table->data_ptr_list.first->next;
+	struct jdb_cell_data_ptr_blk *data_ptr, *first;
+	_wdeb_free(L"dptr_first: %u, cnt = %u", table->data_ptr_list.first->bid, table->data_ptr_list.cnt);
+	first = table->data_ptr_list.first;
+	while (first) {
+		data_ptr = first;
+		_wdeb_free(L"dptr: %u", data_ptr->bid);
+		assert(data_ptr);
+		assert(data_ptr->entry);
+		first = first->next;
 		free(data_ptr->entry);
 		free(data_ptr);
 	}
-
+	
+	table->data_ptr_list.first = NULL;
+	
 	return 0;
 }
 
@@ -114,7 +121,7 @@ int _jdb_load_data_ptr(struct jdb_handle *h, struct jdb_table *table)
 
 	jdb_bid_t *bid;
 
-	jdb_bid_t i, j, n;
+	jdb_bid_t i, n;
 
 	jdb_bent_t k;
 
@@ -159,9 +166,7 @@ int _jdb_load_data_ptr(struct jdb_handle *h, struct jdb_table *table)
 
 			return -JE_MALOC;
 
-		}
-
-		blk->next = NULL;
+		}		
 
 		blk->bid = bid[i];
 
@@ -186,6 +191,8 @@ int _jdb_load_data_ptr(struct jdb_handle *h, struct jdb_table *table)
 		for(k = 0; k < h->hdr.dptr_bent; k++){
 			blk->entry[k].parent = blk;
 		}
+
+		blk->next = NULL;
 
 		if (!table->data_ptr_list.first) {
 
@@ -221,7 +228,6 @@ int _jdb_create_dptr_chain(struct jdb_handle* h, struct jdb_table* table,
 
 	jdb_bid_t n = needed;
 	jdb_bent_t bent, added_in_this_blk;
-	jdb_bid_t i;
 	int ret;
 	*list = NULL;
 
@@ -426,7 +432,7 @@ int _jdb_rm_dptr_chain(		struct jdb_handle* h, struct jdb_table* table,
 				struct jdb_cell* cell,
 				jdb_bid_t bid, jdb_bent_t bent){
 				
-	struct jdb_cell_data_ptr_blk_entry* next, first, *last;
+	struct jdb_cell_data_ptr_blk_entry first, *last;
 	struct jdb_cell_data_ptr_blk* blk;
 	
 	first.next = NULL;

@@ -31,8 +31,6 @@ size_t _jdb_data_len(struct jdb_handle *h, struct jdb_table * table,
 		      jdb_data_t dtype, jdb_data_t * base_type, size_t * base_len)
 {
 
-	struct jdb_cell_data_blk *entry;
-
 	size_t ret;
 
 	if (dtype <= JDB_TYPE_NULL) {

@@ -299,16 +299,25 @@ void _jdb_free_celldef_list(struct jdb_table *table)
 {
 
 	struct jdb_celldef_blk *del;
+#ifndef NDEBUG
+	uint32_t n = table->celldef_list.cnt;
+#endif	
+	
+	_wdeb_free(L"freeing celldef list cnt = %u", table->celldef_list.cnt);
 
 	while (table->celldef_list.first) {
-
+		_wdeb_free(L"freeing");
 		del = table->celldef_list.first;
-
 		table->celldef_list.first = table->celldef_list.first->next;
-
 		free(del->entry);
-
 		free(del);
+
+#ifndef NDEBUG
+		n--;
+		if(!n){
+			_wdeb_free(L"must exit");
+		}
+#endif
 
 	}
 
@@ -525,9 +534,6 @@ _jdb_rm_celldef(struct jdb_handle *h, struct jdb_table *table,
 {
 
 	struct jdb_celldef_blk *blk;
-
-	struct jdb_celldef_blk_entry *entry;
-
 	jdb_bent_t bent, nful;
 
 	int ret;
@@ -575,68 +581,88 @@ int jdb_create_cell(struct jdb_handle *h,
 {
 
 	int ret;
-
-	struct jdb_cell *cell;
-	
+	struct jdb_cell *cell;	
 	struct jdb_celldef_blk*	celldef_blk;
 	struct jdb_celldef_blk_entry *celldef_entry;
 	struct jdb_typedef_blk*	typedef_blk;
 	struct jdb_typedef_blk_entry* typedef_entry;
 	struct jdb_table *table;
-
-	uchar base_type;
-
-	size_t base_len;
 	
+	//journalling
+	uint64_t chid;
+	size_t argsize[6];	
+
 	if(dtype == JDB_TYPE_NULL) return -JE_TYPE;
 	
-	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;	
+	chid = _jdb_get_chid(h, 1);
+	argsize[0] = WBYTES(table_name);
+	argsize[1] = sizeof(uint32_t);
+	argsize[2] = sizeof(uint32_t);
+	argsize[3] = datalen;
+	argsize[4] = sizeof(uint32_t);
+	argsize[5] = sizeof(jdb_data_t);
+	_jdb_jrnl_reg(h, chid, JDB_CMD_CREATE_CELL, 0, 6, argsize,
+			table_name, col, row, data, datalen, dtype);
+	
+	if((ret = _jdb_table_handle(h, table_name, &table))<0){
+		_jdb_jrnl_reg_end(h, chid, ret);
+		return ret;	
+	}
 
 	if (row > table->main.hdr.nrows) {
 
-		if (table->main.hdr.flags & JDB_TABLE_BIND_ROWS)
-
+		if (table->main.hdr.flags & JDB_TABLE_BIND_ROWS){
+			_jdb_jrnl_reg_end(h, chid, -JE_LIMIT);
 			return -JE_LIMIT;
+		}
 
 	}
 
 	if (col > table->main.hdr.ncols) {
 
-		if (table->main.hdr.flags & JDB_TABLE_BIND_COLS)
-
+		if (table->main.hdr.flags & JDB_TABLE_BIND_COLS){
+			_jdb_jrnl_reg_end(h, chid, -JE_LIMIT);
 			return -JE_LIMIT;
+		}
 
 	}
 	
-	if (_jdb_find_cell_by_pos(h, table, row, col))
-
-		return -JE_EXISTS;	
+	if (_jdb_find_cell_by_pos(h, table, row, col)){
+		_jdb_jrnl_reg_end(h, chid, -JE_EXISTS);
+		return -JE_EXISTS;
+	}
 
 	if (dtype > JDB_TYPE_NULL) {
 
-		if ((ret = _jdb_find_typedef(h, table, dtype, &typedef_blk, &typedef_entry)) < 0)
-
+		if ((ret = _jdb_find_typedef(h, table, dtype, &typedef_blk, &typedef_entry)) < 0){
+			_jdb_jrnl_reg_end(h, chid, ret);
 			return ret;
+		}
 			
 		if(!(typedef_entry->flags & JDB_TYPE_VAR)){ //fixed
-			if(	datalen > typedef_entry->len ||
-				datalen%typedef_entry->len)
-					return -JE_SIZE;
+			if(datalen > typedef_entry->len ||
+			   datalen%typedef_entry->len){
+					
+				_jdb_jrnl_reg_end(h, chid, -JE_SIZE);
+				return -JE_SIZE;
+			}
 		}
 
 	} else {//base types, you forgot
 
-		if ((ret = _jdb_check_datalen(dtype, datalen)) < 0)
-
+		if ((ret = _jdb_check_datalen(dtype, datalen)) < 0){
+			_jdb_jrnl_reg_end(h, chid, ret);
 			return ret;
+		}
 
 	}
 
 	if (table->main.hdr.flags & JDB_TABLE_ENFORCE_COL_TYPE) {
 
-		if (dtype != jdb_find_col_type(h, table_name, col))
-
+		if (dtype != jdb_find_col_type(h, table_name, col)){
+			_jdb_jrnl_reg_end(h, chid, ret);
 			return -JE_TYPE;
+		}
 
 	}
 
@@ -647,7 +673,8 @@ int jdb_create_cell(struct jdb_handle *h,
 	     _jdb_add_celldef(h, table, row, col, dtype, datalen,
 			      JDB_ID_INVAL, JDB_BENT_INVAL, &celldef_blk,
 			      &celldef_entry))<0){
-
+					
+		_jdb_jrnl_reg_end(h, chid, ret);
 		return ret;
 
 	}
@@ -659,7 +686,7 @@ int jdb_create_cell(struct jdb_handle *h,
 	if (!cell) {
 
 		_jdb_rm_celldef(h, table, row, col);
-
+		_jdb_jrnl_reg_end(h, chid, -JE_MALOC);
 		return -JE_MALOC;
 
 	}
@@ -674,9 +701,8 @@ int jdb_create_cell(struct jdb_handle *h,
 		if (!cell->data) {
 
 			_jdb_rm_celldef(h, table, row, col);
-
 			free(cell);
-
+			_jdb_jrnl_reg_end(h, chid, -JE_MALOC);
 			return -JE_MALOC;
 
 		}
@@ -728,6 +754,7 @@ int jdb_create_cell(struct jdb_handle *h,
 				free(cell);
 				_wdeb_add(L"removing celldef");
 				_jdb_rm_celldef(h, table, row, col);
+				_jdb_jrnl_reg_end(h, chid, ret);
 				return ret;
 			}			
 		} else {
@@ -739,6 +766,7 @@ int jdb_create_cell(struct jdb_handle *h,
 				free(cell);
 				_wdeb_add(L"removing celldef");
 				_jdb_rm_celldef(h, table, row, col);
+				_jdb_jrnl_reg_end(h, chid, ret);
 				return ret;
 			}
 			
@@ -769,7 +797,9 @@ int jdb_create_cell(struct jdb_handle *h,
 	}
 
 	table->main.hdr.ncells++;
-
+	
+	_jdb_jrnl_reg_end(h, chid, ret);
+	
 	return ret;
 
 }
@@ -834,14 +864,27 @@ int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
 		uint32_t col, uint32_t row){
 
 	struct jdb_cell *cell, *prev;
-	jdb_bent_t bent;
 	struct jdb_table* table;
 	int ret;
 	jdb_bid_t next_dptr_bid;
 	jdb_bent_t next_dptr_bent;
 	struct jdb_cell_data_ptr_blk_entry* dptr;
 	
-	if((ret = _jdb_table_handle(h, table_name, &table)) < 0) return ret;	
+	//journalling
+	uint64_t chid;
+	size_t argsize[3];
+	
+	chid = _jdb_get_chid(h, 1);
+	argsize[0] = WBYTES(table_name);
+	argsize[1] = sizeof(uint32_t);
+	argsize[2] = sizeof(uint32_t);
+	_jdb_jrnl_reg(h, chid, JDB_CMD_RM_CELL, 0, 3, argsize,
+			table_name, col, row);
+	
+	if((ret = _jdb_table_handle(h, table_name, &table)) < 0){
+		_jdb_jrnl_reg_end(h, chid, ret);
+		return ret;
+	}
 
 	prev = table->cell_list.first;
 	for (cell = table->cell_list.first; cell; cell = cell->next) {		
@@ -881,10 +924,11 @@ int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
 		_jdb_free_cell(cell);
 		
 		table->main.hdr.ncells--;
-		
+		_jdb_jrnl_reg_end(h, chid, 0);
 		return 0;
 	}
 	
+	_jdb_jrnl_reg_end(h, chid, -JE_NOTFOUND);
 	return -JE_NOTFOUND;
 	
 	
@@ -908,16 +952,24 @@ void _jdb_free_cell_list(struct jdb_table *table)
 {
 
 	struct jdb_cell* del;
-
+#ifndef NDEBUG
+	uint32_t n = table->cell_list.cnt;
+#endif	
+	_wdeb_free(L"freeing cell list cnt = %u", table->cell_list.cnt);
+	
 	while (table->cell_list.first) {
-
+		_wdeb_free(L"freeing");
 		del = table->cell_list.first;
-
 		table->cell_list.first = table->cell_list.first->next;
-
 		_jdb_free_cell(del);
-
 		free(del);
+		
+#ifndef NDEBUG
+		n--;
+		if(!n){
+			_wdeb_free(L"must exit");
+		}
+#endif		
 
 	}
 

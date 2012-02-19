@@ -151,7 +151,7 @@ int _jdb_load_col_typedef(struct jdb_handle *h, struct jdb_table *table)
 
 	jdb_bid_t *bid;
 
-	jdb_bid_t i, j, n;
+	jdb_bid_t i, n;
 
 	int ret;
 
@@ -479,7 +479,7 @@ int _jdb_load_typedef(struct jdb_handle *h, struct jdb_table *table)
 
 	jdb_bid_t *bid;
 
-	jdb_bid_t i, j, n;
+	jdb_bid_t i, n;
 
 	int ret;
 
@@ -594,22 +594,27 @@ int _jdb_write_typedef(struct jdb_handle *h, struct jdb_table *table)
 }
 
 int jdb_add_typedef(struct jdb_handle *h, wchar_t* table_name,
-		    uchar type_id, uchar base, uint32_t len, uchar flags)
+		    jdb_data_t type_id, jdb_data_t base, uint32_t len,
+		    uchar flags)
 {
 
 	struct jdb_typedef_blk *blk;
-
 	struct jdb_typedef_blk_entry *entry;
-
 	jdb_bid_t bid;
-
 	jdb_bent_t bent;
-
 	int ret;
-
-	size_t base_size;
+	size_t base_size;	
+	struct jdb_table* table;
 	
-	struct jdb_table* table;	
+	//journalling
+	uint64_t chid;
+	size_t argsize[5];
+	
+	if (h->magic != JDB_MAGIC)
+		return -JE_NOINIT;
+
+	if (h->fd == -1)
+		return -JE_NOOPEN;		
 
 	if (type_id < JDB_TYPE_NULL || base > JDB_TYPE_NULL || base == JDB_TYPE_EMPTY)
 		return -JE_FORBID;
@@ -625,10 +630,24 @@ int jdb_add_typedef(struct jdb_handle *h, wchar_t* table_name,
 	if ((len % base_size) && base_size)
 		return -JE_FORBID;
 		
-	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;
+	chid = _jdb_get_chid(h, 1);
+	argsize[0] = WBYTES(table_name);
+	argsize[1] = sizeof(jdb_data_t);
+	argsize[2] = sizeof(jdb_data_t);
+	argsize[3] = sizeof(uint32_t);
+	argsize[4] = sizeof(uchar);	
+	_jdb_jrnl_reg(h, chid, JDB_CMD_ADD_TYPEDEF, 0, 5, argsize, 
+			table_name, type_id, base, len, flags);
+		
+	if((ret = _jdb_table_handle(h, table_name, &table))<0){
+		_jdb_jrnl_reg_end(h, chid, ret);
+		return ret;
+	}
 
-	if (!_jdb_find_typedef(h, table, type_id, &blk, &entry))
+	if (!_jdb_find_typedef(h, table, type_id, &blk, &entry)){
+		_jdb_jrnl_reg_end(h, chid, -JE_EXISTS);
 		return -JE_EXISTS;
+	}
 
 	bid =
 	    _jdb_find_first_map_match(h, JDB_BTYPE_TYPE_DEF, 0,
@@ -641,8 +660,10 @@ int jdb_add_typedef(struct jdb_handle *h, wchar_t* table_name,
 
 	if (bid == JDB_ID_INVAL) {
 
-		if ((ret = _jdb_create_typedef(h, table)) < 0)
+		if ((ret = _jdb_create_typedef(h, table)) < 0){
+			_jdb_jrnl_reg_end(h, chid, ret);
 			return ret;
+		}
 
 		blk = table->typedef_list.last;
 
@@ -683,7 +704,10 @@ int jdb_add_typedef(struct jdb_handle *h, wchar_t* table_name,
 			if(blk->bid == bid) break;
 		}
 		
-		if(!blk) return -JE_UNK;
+		if(!blk){
+			_jdb_jrnl_reg_end(h, chid, -JE_UNK);
+			return -JE_UNK;
+		}
 
 
 	}
@@ -694,27 +718,27 @@ int jdb_add_typedef(struct jdb_handle *h, wchar_t* table_name,
 
 			ret = _jdb_inc_map_nful_by_bid(h, blk->bid, 1);
 
-			if (ret < 0)
+			if (ret < 0){
+				_jdb_jrnl_reg_end(h, chid, ret);
 				return ret;
+			}
 
 			blk->entry[bent].flags = flags;
-
 			blk->entry[bent].type_id = type_id;
-
 			blk->entry[bent].base = base;
-
 			blk->entry[bent].len = len;
 
 			_JDB_SET_WR(h, blk, blk->bid, table, 1);
 			//blk->write = 1;
 			
 			_wdeb_type(L"returning");
-
+			_jdb_jrnl_reg_end(h, chid, 0);
 			return 0;
 
 		}
 	}
 
+	_jdb_jrnl_reg_end(h, chid, -JE_UNK);
 	return -JE_UNK;
 
 }
@@ -753,18 +777,34 @@ int _jdb_rm_typedef_block(struct jdb_handle* h, struct jdb_table* table, jdb_bid
 
 }
 
-int jdb_rm_typedef(struct jdb_handle *h, wchar_t* table_name, uchar type_id)
+int jdb_rm_typedef(	struct jdb_handle *h, wchar_t* table_name,
+			jdb_data_t type_id)
 {
-	struct jdb_typedef_blk *blk, blkv;
+	struct jdb_typedef_blk *blk;
 	struct jdb_typedef_blk_entry *entry;
 	int ret;	
 	struct jdb_table *table;
 	jdb_bent_t nful;
 	
-	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;	
-
-	if ((ret = _jdb_find_typedef(h, table, type_id, &blk, &entry)) < 0)
+	//journalling
+	uint64_t chid;
+	size_t argsize[2];
+	
+	chid = _jdb_get_chid(h, 1);
+	argsize[0] = WBYTES(table_name);
+	argsize[1] = sizeof(jdb_data_t);
+	_jdb_jrnl_reg(h, chid, JDB_CMD_RM_TYPEDEF, 0, 2, argsize,
+			table_name, type_id);
+	
+	if((ret = _jdb_table_handle(h, table_name, &table))<0){
+		_jdb_jrnl_reg_end(h, chid, ret);
 		return ret;
+	}
+
+	if ((ret = _jdb_find_typedef(h, table, type_id, &blk, &entry)) < 0){
+		_jdb_jrnl_reg_end(h, chid, ret);
+		return ret;
+	}
 
 	_jdb_dec_map_nful_by_bid(h, blk->bid, 1);
 	entry->type_id = JDB_TYPE_EMPTY;
@@ -777,8 +817,10 @@ int jdb_rm_typedef(struct jdb_handle *h, wchar_t* table_name, uchar type_id)
 		_jdb_rm_typedef_block(h, table, blk->bid);
 	} else {	
 		_JDB_SET_WR(h, blk, blk->bid, table, 1);
-		//blk->write = 1		
+		//blk->write = 1
 	}
+	
+	_jdb_jrnl_reg_end(h, chid, 0);
 	
 	return 0;
 
@@ -813,30 +855,49 @@ uchar jdb_find_col_type(struct jdb_handle * h, wchar_t* table_name,
 }
 
 int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
-			uchar type_id, uint32_t col)
+			jdb_data_t type_id, uint32_t col)
 {
 
 	struct jdb_typedef_blk *typedef_blk;
 	struct jdb_typedef_blk_entry *typedef_entry;
 	struct jdb_col_typedef *blk;
-	struct jdb_col_typedef_blk_entry *col_typedef_entry;
 	struct jdb_table *table;
 	jdb_bid_t bid;
 	jdb_bent_t bent;
 	int ret;
 	
-	if((ret = _jdb_table_handle(h, table_name, &table))<0) return ret;	
+	//journalling
+	uint64_t chid;
+	size_t argsize[3];
+	
+	chid = _jdb_get_chid(h, 1);
+	argsize[0] = WBYTES(table_name);
+	argsize[1] = sizeof(jdb_data_t);
+	argsize[2] = sizeof(uint32_t);
+	_jdb_jrnl_reg(h, chid, JDB_CMD_ASSIGN_COLTYPE, 0, 3, argsize,
+			table_name, type_id, col);
+	
+	if((ret = _jdb_table_handle(h, table_name, &table))<0){
+		_jdb_jrnl_reg_end(h, chid, ret);
+		return ret;
+	}
 
-	if (col > table->main.hdr.ncols)
+	if (col > table->main.hdr.ncols){
+		_jdb_jrnl_reg_end(h, chid, -JE_LIMIT);
 		return -JE_LIMIT;
+	}
 
-	if (jdb_find_col_type(h, table_name, col) != JDB_TYPE_EMPTY)
+	if (jdb_find_col_type(h, table_name, col) != JDB_TYPE_EMPTY){
+		_jdb_jrnl_reg_end(h, chid, -JE_EXISTS);
 		return -JE_EXISTS;
+	}
 
 	if ((ret =
 	     _jdb_find_typedef(h, table, type_id, &typedef_blk,
-			       &typedef_entry)) < 0)
+			       &typedef_entry)) < 0){
+		_jdb_jrnl_reg_end(h, chid, ret);
 		return ret;
+	}
 		
 	bid =
 	    _jdb_find_first_map_match(h, JDB_BTYPE_COL_TYPEDEF, 0,
@@ -849,8 +910,10 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 
 	if (bid == JDB_ID_INVAL) {
 
-		if ((ret = _jdb_create_col_typedef(h, table)) < 0)
+		if ((ret = _jdb_create_col_typedef(h, table)) < 0){
+			_jdb_jrnl_reg_end(h, chid, ret);
 			return ret;
+		}
 
 		blk = table->col_typedef_list.last;
 
@@ -890,7 +953,10 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 			if(blk->bid == bid) break;
 		}
 		
-		if(!blk) return -JE_UNK;
+		if(!blk){
+			_jdb_jrnl_reg_end(h, chid, ret);
+			return -JE_UNK;
+		}
 		
 		
 	}
@@ -903,11 +969,12 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 
 			ret = _jdb_inc_map_nful_by_bid(h, blk->bid, 1);
 
-			if (ret < 0)
+			if (ret < 0){
+				_jdb_jrnl_reg_end(h, chid, ret);
 				return ret;
+			}
 
 			blk->entry[bent].type_id = type_id;
-
 			blk->entry[bent].col = col;
 
 			_JDB_SET_WR(h, blk, blk->bid, table, 1);
@@ -916,12 +983,14 @@ int jdb_assign_col_type(struct jdb_handle *h, wchar_t* table_name,
 			table->main.hdr.ncol_typedef++;
 			
 			_JDB_SET_WR(h, &table->main, table->table_def_bid, table, 1);
-			
+			_jdb_jrnl_reg_end(h, chid, 0);
 			return 0;
 
 		}
 	}
-
+	
+	_jdb_jrnl_reg_end(h, chid, -JE_UNK);
+	
 	return -JE_UNK;
 	
 }
@@ -967,7 +1036,6 @@ int jdb_rm_col_type(struct jdb_handle *h, wchar_t* table_name, uint32_t col)
 	//struct jdb_typedef_blk* typedef_blk;
 	//struct jdb_typedef_blk_entry* typedef_entry;
 	struct jdb_col_typedef *blk;
-	struct jdb_col_typedef_blk_entry *entry;
 	jdb_bent_t bent;
 	struct jdb_table *table;
 	int ret;

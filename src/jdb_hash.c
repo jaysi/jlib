@@ -38,6 +38,7 @@ uchar _jdb_pearson(unsigned char *key, size_t len)
 	return (hash);
 }
 
+//actually just-one-at-time hash, see WIKIPEDIA
 uint32_t _jdb_hash(unsigned char *key, size_t key_len)
 {
 	uint32_t hash = 0;

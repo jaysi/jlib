@@ -13,11 +13,9 @@ int jdb_find_table(struct jdb_handle *h, wchar_t * name)
 	struct jdb_table *table;
 
 	if (h->magic != JDB_MAGIC)
-
 		return -JE_NOINIT;
 
 	if (h->fd == -1)
-
 		return -JE_NOOPEN;
 		
 	for(table = h->table_list.first; table; table = table->next){
@@ -26,7 +24,6 @@ int jdb_find_table(struct jdb_handle *h, wchar_t * name)
 
 	if (_jdb_find_first_map_match
 	    (h, 0, 0, _jdb_get_tid(name), 0, JDB_MAP_CMP_TID) != JDB_ID_INVAL)
-
 		return 0;
 
 	return -JE_NOTFOUND;
@@ -36,48 +33,59 @@ int jdb_find_table(struct jdb_handle *h, wchar_t * name)
 int
 jdb_create_table(struct jdb_handle *h, wchar_t * name,
 		 uint32_t nrows, uint32_t ncols, uchar flags, uint16_t indexes)
-{	
+{
 
-	struct jdb_table *table;	
-
+	struct jdb_table *table;
 	jdb_tid_t tid;
-
 	size_t namelen;
-	
+
+	//for journalling
+	uint64_t chid;
+	size_t argsize[5];
+
 	_wdeb_table(L"creating table %S, R: %u, C: %u", name, nrows, ncols);
 
 	if (h->magic != JDB_MAGIC)
-
 		return -JE_NOINIT;
 
 	if (h->fd == -1)
-
 		return -JE_NOOPEN;
+
+	chid = _jdb_get_chid(h, 1);
+	argsize[0] = WBYTES(name);
+	argsize[1] = sizeof(uint32_t);
+	argsize[2] = sizeof(uint32_t);
+	argsize[3] = sizeof(uchar);
+	argsize[4] = sizeof(uint16_t);
+	_jdb_jrnl_reg(h, chid, JDB_CMD_CREATE_TABLE, 0, 5, argsize, name, nrows, ncols, flags, indexes);	
 
 	/*
 	   1. is exists?
 	   2. create a table_def entry inside the map and save bid
 	   3. register index entry
-	 */
+	 */	 
 	tid = _jdb_get_tid(name);
 
 	if (_jdb_find_first_map_match(h, 0, 0, tid, 0, JDB_MAP_CMP_TID)
-	    != JDB_ID_INVAL)
-
+	    != JDB_ID_INVAL){
+		_jdb_jrnl_reg_end(h, chid, -JE_EXISTS);
 		return -JE_EXISTS;
+	}
 
 	if ((namelen =
 	     wtojcs_len(name,
 			h->hdr.blocksize - (sizeof(struct jdb_table_def_blk_hdr)
-					    + 1))) == ((size_t) - 1))
-
+					    + 1))) == ((size_t) - 1)){
+		_jdb_jrnl_reg_end(h, chid, -JE_TOOLONG);
 		return -JE_TOOLONG;
+	}
 
 	table = (struct jdb_table *)malloc(sizeof(struct jdb_table));
 
-	if (!table)
-
+	if (!table){
+		_jdb_jrnl_reg_end(h, chid, -JE_MALOC);
 		return -JE_MALOC;
+	}
 
 	table->table_def_bid =
 	    _jdb_get_empty_map_entry(h, JDB_BTYPE_TABLE_DEF, 0, tid, 0);
@@ -87,7 +95,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 		_wdeb(L"failed to get table_def_bid");
 
 		free(table);
-
+		_jdb_jrnl_reg_end(h, chid, -JE_LIMIT);
 		return -JE_LIMIT;
 
 	}
@@ -98,6 +106,10 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	h->hdr.nblocks++;
 	//h->hdr.ndata_ptrs++;
+	
+	h->hdr.nblocks++;
+	h->hdr.ntables++;
+	
 	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
 	_jdb_unlock_handle(h);		
 
@@ -108,32 +120,19 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	table->nwrblk = 0UL;
 	table->map_chg_list_size = 0UL;
 	table->map_chg_ptr = 0UL;
-	table->map_chg_list = NULL;
-		
+	table->map_chg_list = NULL;		
 	table->main.hdr.type = JDB_BTYPE_TABLE_DEF;
-
 	table->main.hdr.tid = tid;
-
 	table->main.hdr.ncells = 0UL;
-
-	table->main.hdr.ncol_typedef = 0UL;	
-
+	table->main.hdr.ncol_typedef = 0UL;
 	table->main.hdr.tid = tid;
-
 	table->main.hdr.ncols = ncols;
-
 	table->main.hdr.nrows = nrows;
-
 	table->main.hdr.flags = flags;
-
 	table->main.hdr.indexes = indexes;	
-
 	table->main.hdr.namelen = namelen;
-
 	table->main.name = (wchar_t *) malloc(WBYTES(name));
-
 	wcscpy(table->main.name, name);
-	
 	table->main.hdr.namelen = namelen;
 	table->main.write = 0UL;
 	_JDB_SET_WR(h, &table->main, table->table_def_bid, table, 1);
@@ -142,43 +141,26 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	_wdeb_table_def(L"col_typedef main bid: %u", table->table_def_bid);
 
 	table->next = NULL;
-
 	table->col_typedef_list.first = NULL;
-
 	table->typedef_list.first = NULL;
-
 	table->celldef_list.first = NULL;
-
 	table->cell_list.first = NULL;
-
 	table->data_ptr_list.first = NULL;
-
 	table->data_list.first = NULL;
-
 	table->fav_list.first = NULL;
 
 
 	if (!h->table_list.first) {
-
 		h->table_list.first = table;
-
 		h->table_list.last = table;
-
 		h->table_list.cnt = 1UL;
-
 	} else {
-
 		h->table_list.last->next = table;
-
 		h->table_list.last = h->table_list.last->next;
-
 		h->table_list.cnt++;
-
 	}
 
-	h->hdr.nblocks++;
-	h->hdr.ntables++;
-
+	_jdb_jrnl_reg_end(h, chid, 0);
 	return 0;
 
 }
@@ -187,7 +169,6 @@ void _jdb_free_table_def(struct jdb_table *table)
 {
 
 	if (table->main.name)
-
 		free(table->main.name);
 
 }
@@ -196,13 +177,11 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 {
 
 	struct jdb_table *table;
-
 	int ret;
 
 	table = (struct jdb_table *)malloc(sizeof(struct jdb_table));
 
 	if (!table)
-
 		return -JE_MALOC;
 
 	table->table_def_bid =
@@ -214,27 +193,20 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 		_wdeb(L"failed to get table_def_bid");
 
 		free(table);
-
 		return -JE_NOTFOUND;
 
 	}
 
 	table->col_typedef_list.first = NULL;
-
 	table->typedef_list.first = NULL;
-
 	table->celldef_list.first = NULL;
-
 	table->cell_list.first = NULL;
-
 	table->data_ptr_list.first = NULL;
-
 	table->data_list.first = NULL;
-
 	table->fav_list.first = NULL;	
+	table->index1_list.first = NULL;	
 
 	if ((ret = _jdb_read_table_def_blk(h, table)) < 0)
-
 		return ret;
 
 	table->main.write = 0;
@@ -248,9 +220,7 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 	if ((ret = _jdb_load_typedef(h, table)) < 0) {
 
 		_jdb_free_table_def(table);
-
 		free(table);
-
 		return ret;
 
 	}
@@ -260,11 +230,8 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 	if ((ret = _jdb_load_col_typedef(h, table)) < 0) {
 
 		_jdb_free_table_def(table);
-
 		_jdb_free_typedef_list(table);
-
 		free(table);
-
 		return ret;
 
 	}
@@ -274,13 +241,9 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 	if ((ret = _jdb_load_celldef(h, table)) < 0) {
 
 		_jdb_free_table_def(table);
-
 		_jdb_free_typedef_list(table);
-
 		_jdb_free_col_typedef_list(table);
-
 		free(table);
-
 		return ret;
 
 	}
@@ -289,13 +252,9 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 	if ((ret = _jdb_load_data_ptr(h, table)) < 0) {
 
 		_jdb_free_table_def(table);
-
 		_jdb_free_typedef_list(table);
-
 		_jdb_free_col_typedef_list(table);
-
-		_jdb_free_celldef_list(table);		
-
+		_jdb_free_celldef_list(table);
 		free(table);
 
 		return ret;
@@ -307,17 +266,11 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 	if ((ret = _jdb_load_fav(h, table)) < 0) {
 
 		_jdb_free_table_def(table);
-
 		_jdb_free_typedef_list(table);
-
 		_jdb_free_col_typedef_list(table);
-
-		_jdb_free_celldef_list(table);	
-
+		_jdb_free_celldef_list(table);
 		_jdb_free_data_ptr_list(table);
-
 		free(table);
-
 		return ret;
 
 	}
@@ -326,19 +279,12 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 	
 	if((ret = _jdb_load_fav_blocks(h, table)) < 0){
 		_jdb_free_table_def(table);
-
 		_jdb_free_typedef_list(table);
-
 		_jdb_free_col_typedef_list(table);
-
 		_jdb_free_celldef_list(table);	
-
 		_jdb_free_data_ptr_list(table);
-
 		_jdb_free_fav_list(table);
-
 		free(table);
-
 		return ret;
 		
 	}
@@ -347,21 +293,13 @@ int _jdb_load_table(struct jdb_handle *h, jdb_tid_t tid, uchar flags)
 
 	if((ret = _jdb_load_cells(h, table, 0)) < 0){
 		_jdb_free_table_def(table);
-
 		_jdb_free_typedef_list(table);
-
 		_jdb_free_col_typedef_list(table);
-
 		_jdb_free_celldef_list(table);	
-
 		_jdb_free_data_ptr_list(table);
-
 		_jdb_free_fav_list(table);
-
-		_jdb_free_data_list(table);				
-
+		_jdb_free_data_list(table);
 		free(table);
-
 		return ret;
 		
 	}
@@ -587,8 +525,6 @@ int jdb_open_table(struct jdb_handle *h, wchar_t * name, uchar flags)
 {
 	struct jdb_table* table;
 	jdb_tid_t tid;
-	jdb_bid_t bid;
-	int ret;
 	
 	for(table = h->table_list.first; table; table = table->next){
 		if(!wcscmp(table->main.name, name)) return -JE_ISOPEN;
@@ -633,22 +569,31 @@ int jdb_close_table(struct jdb_handle *h, wchar_t * name)
 	
 	if(!entry) return -JE_UNK;
 	
+	_jdb_free_data_ptr_list(entry);
+	_jdb_free_data_list(entry);	
 	_jdb_free_cell_list(entry); //put before everything
 	_jdb_free_typedef_list(entry);
 	_jdb_free_col_typedef_list(entry);
-	_jdb_free_data_ptr_list(entry);
-	_jdb_free_data_list(entry);
 	_jdb_free_celldef_list(entry);
 	_jdb_free_fav_list(entry);
-	_jdb_free_table_def(entry);	
+	_jdb_free_table_def(entry);
+	
+	free(entry);	
 	
 	return 0;
 }
 
 int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 {	
-	int ret;
 	struct jdb_table* entry, *prev;
+	
+	//journalling
+	uint64_t chid;
+	size_t argsize;
+	
+	chid = _jdb_get_chid(h, 1);
+	argsize = WBYTES(name);
+	_jdb_jrnl_reg(h, chid, JDB_CMD_RM_TABLE, 0, 1, &argsize, name);
 	
 	prev = h->table_list.first;
 	entry = prev;
@@ -673,7 +618,10 @@ int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 		
 	}
 	
-	if(!entry) return -JE_UNK;	
+	if(!entry){
+		_jdb_jrnl_reg_end(h, chid, -JE_NOTFOUND);
+		return -JE_NOTFOUND;	
+	}
 	
 	_jdb_rm_map_entries_by_tid(h, _jdb_get_tid(name));
 	
@@ -697,7 +645,7 @@ int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
 	_jdb_unlock_handle(h);			
 
-	
+	_jdb_jrnl_reg(h, chid, 0);
 	
 	return 0;
 }

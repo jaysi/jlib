@@ -28,8 +28,8 @@ CustomMakefile=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
-CompilerSettings=000000000000000010100000000
-UnitCount=63
+CompilerSettings=000000000010000010100000000
+UnitCount=66
 
 [VersionInfo]
 Major=1
@@ -662,7 +662,7 @@ BuildCmd=
 
 [Unit62]
 FileName=BUGS
-Folder=jlib
+Folder=
 Compile=0
 Link=0
 Priority=1000
@@ -671,9 +671,39 @@ BuildCmd=
 
 [Unit63]
 FileName=README
-Folder=jlib
+Folder=
 Compile=0
 Link=0
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit64]
+FileName=include\jdb_jrnl.h
+CompileCpp=0
+Folder=db
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit65]
+FileName=TODO
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit66]
+FileName=include\jcrypt.h
+CompileCpp=0
+Folder=crypto
+Compile=1
+Link=1
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=

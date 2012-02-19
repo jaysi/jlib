@@ -4,6 +4,7 @@
 #define _wdeb_type _wdeb
 #define _wdeb_load _wdeb
 #define _wdeb_data_ptr	_wdeb
+#define _wdeb_ch _wdeb
 
 int _jdb_create_fav(struct jdb_handle *h, struct jdb_table *table)
 {
@@ -114,11 +115,11 @@ int _jdb_load_fav(struct jdb_handle *h, struct jdb_table *table)
 
 	jdb_bid_t *bid;
 
-	jdb_bid_t i, j, n;
+	jdb_bid_t i, n;
 
 	int ret;
 
-	struct jdb_fav_blk *blk;
+	struct jdb_fav_blk *blk;	
 
 	ret =
 	    _jdb_list_map_match(h, JDB_BTYPE_TABLE_FAV, 0, table->main.hdr.tid,
@@ -242,12 +243,11 @@ int _jdb_inc_fav(struct jdb_handle *h, struct jdb_table* table,
 
 	int ret;
 
-	size_t base_size;
-	
-//	struct jdb_table* table;	
+	_wdeb_ch(L"increasing fav of %u", bid);
 
 	if (!_jdb_find_fav(h, table, bid, &blk, &entry)){
 		if(entry->nhits < JDB_ID_INVAL) entry->nhits++;
+		_wdeb_ch(L"fav of %u is %u", bid, entry->nhits);
 		return 0;
 	}
 		
@@ -375,7 +375,6 @@ static inline int _jdb_list_fav(struct jdb_handle* h, struct jdb_table* table, j
 	
 	jdb_bid_t i, j, found;
 	struct jdb_fav_blk *blk;
-	struct jdb_fav_blk_entry *entry;
 	jdb_bid_t* hit_list, sm, sm_i;
 
 	hit_list = (jdb_bid_t*)malloc(sizeof(jdb_bid_t)*(*n));
@@ -426,17 +425,30 @@ int _jdb_load_fav_blocks(struct jdb_handle* h, struct jdb_table* table){
 	jdb_bid_t* bid_list;
 	int ret = 0;
 	struct jdb_cell_data_blk* blk, *first, *last;
-	struct jdb_map_blk_entry* m_ent;
+	struct jdb_map_blk_entry* m_ent;	
 	
 	n = h->conf.fav_load;
+	
+	_wdeb_load(L"loading favourite %u of blocks", n);
+	
+	if(!n) return 0;
 	
 	bid_list = (jdb_bid_t*)malloc(sizeof(jdb_bid_t)*n);
 	if(!bid_list) return -JE_MALOC;
 	ret = _jdb_list_fav(h, table, &n, bid_list);
+	
 	if(ret < 0){
 		free(bid_list);
 		return ret;
 	}
+	
+#ifndef NDEBUG
+	wprintf(L"fav list");
+	for(ret = 0; ret < n; ret++){
+		wprintf(L" [%u]:%u ", ret, bid_list[ret]);
+	}
+	wprintf(L"\n");
+#endif	
 	
 	if(!n) return 0;
 	
@@ -484,6 +496,8 @@ end:
 			free(blk);
 		}
 		
+	} else {
+		table->data_list.first = first;
 	}
 
 	return ret;
@@ -498,7 +512,7 @@ void _jdb_free_fav_list(struct jdb_table *table)
 
 	while (table->fav_list.first) {
 
-		del = table->fav_list.first;
+		del = table->fav_list.first;		
 
 		table->fav_list.first = table->fav_list.first->next;
 

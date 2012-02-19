@@ -163,6 +163,7 @@ static inline struct jdb_map* _jdb_get_map_ptr_by_bid(struct jdb_handle* h,
 struct jdb_map_blk_entry* _jdb_get_map_entry_ptr(struct jdb_handle* h, jdb_bid_t bid){
 	struct jdb_map* map;
 	if(!(map = _jdb_get_map_ptr_by_bid(h, bid))) return NULL;
+	assert(_JDB_MAP_BENT(bid, h->hdr.map_bent) <= h->hdr.map_bent);
 	return &map->entry[_JDB_MAP_BENT(bid, h->hdr.map_bent)];
 }
 

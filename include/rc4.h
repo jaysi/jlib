@@ -12,7 +12,7 @@ typedef struct {
 	uchar x, y;
 } rc4_ctx;
 
-extern void rc4_init(uchar * key, int len, rc4_ctx * ctx);
-extern void rc4(uchar * data, int len, rc4_ctx * ctx);
+extern void rc4_init(uchar * key, uint32_t len, rc4_ctx * ctx);
+extern void rc4(uchar * data, uint32_t len, rc4_ctx * ctx);
 
 #endif

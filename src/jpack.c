@@ -96,7 +96,7 @@ long double unpack754(long long i, unsigned bits, unsigned expbits)
 
 /*
 ** packi16() -- store a 16-bit int into a char buffer (like htons())
-*/
+
 void packi16(unsigned char *buf, unsigned int i)
 {
 	*buf++ = i >> 8;
@@ -105,7 +105,7 @@ void packi16(unsigned char *buf, unsigned int i)
 
 /*
 ** packi32() -- store a 32-bit int into a char buffer (like htonl())
-*/
+
 void packi32(unsigned char *buf, unsigned long i)
 {
 	*buf++ = i >> 24;
@@ -128,7 +128,7 @@ void packi64(unsigned char *buf, unsigned long long i)
 
 /*
 ** unpacki16() -- unpack a 16-bit int from a char buffer (like ntohs())
-*/
+
 unsigned int unpacki16(unsigned char *buf)
 {
 	return (buf[0] << 8) | buf[1];
@@ -136,7 +136,7 @@ unsigned int unpacki16(unsigned char *buf)
 
 /*
 ** unpacki32() -- unpack a 32-bit int from a char buffer (like ntohl())
-*/
+
 unsigned long unpacki32(unsigned char *buf)
 {
 	return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
@@ -147,6 +147,7 @@ unsigned long long unpacki64(unsigned char *buf)
 	return (buf[0] << 56) | (buf[1] << 48) | (buf[2] << 40) | (buf[3] << 32)
 	    | (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
 }
+*/
 
 /*
 ** pack() -- store data dictated by the format string in the buffer

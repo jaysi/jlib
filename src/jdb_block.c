@@ -70,8 +70,6 @@ jdb_bid_t _jdb_get_empty_bid(struct jdb_handle * h, int zero_map_entry)
 
 	jdb_bent_t bent;
 
-	jdb_bid_t map_no;
-
 	struct jdb_map *map;
 
 	for (map = h->map_list.first; map; map = map->next) {

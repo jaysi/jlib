@@ -97,7 +97,6 @@ static inline int _jss_write_rec(struct jss_handle *h,
 {
 	uint32_t total, i;
 	uchar *buf;
-	uchar aes_b[AES_BSIZE];
 
 	if ((rec->hdr.flags & JSS_REC_DONTLOAD) && !(rec->data)) {
 		_wdeb1(L"the call fails here, forbidden operation");
@@ -228,7 +227,6 @@ static inline int _jss_write_headers(struct jss_handle *h)
 	uchar *buf;
 	uint32_t total, i;
 	struct jss_rec_entry *rec;
-	uint32_t next_off;
 
 	total = jss_size(h->hdr.nrec * sizeof(struct jss_rec_hdr));
 
@@ -353,7 +351,6 @@ int jss_add(struct jss_handle *h, uint32_t id, uint16_t type,
 {
 
 	struct jss_rec_entry *rec;
-	uint32_t total;
 
 	_wdeb1(L"adding #%u", id);
 
@@ -436,7 +433,6 @@ int jss_add_file(struct jss_handle *h, uint32_t id, uint16_t type, uchar flags,
 		 wchar_t * filename)
 {
 	int fd;
-	ssize_t red, total;
 	char *fname;
 	uchar *buf;
 	struct stat s;

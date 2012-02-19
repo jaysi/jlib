@@ -51,9 +51,6 @@ int jdb_add_filter(	struct jdb_filter* filter, uchar type, uchar not, uint32_t c
 */
 
 static inline int _jdb_check_match(uchar* data, uint32_t datalen, uchar* str, uint32_t slen, uchar type){
-	uint32_t cnt;
-	int not;
-	int size;
 	int ret = -JE_TYPE;
 
 	switch(type & JDB_FILTER_T_MASK){

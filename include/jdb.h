@@ -9,11 +9,13 @@
 #define _JDB_H
 
 #include "jdb_intern.h"
+#include "jdb_jrnl.h"
 #include "jdb_list.h"
 #include "jtypes.h"
 #include "jtable.h"
 #include "jcs.h"
 #include "debug.h"
+#include "jcrypt.h"
 #ifndef JDB_SINGLE_THREAD
 #define _J_USE_PTHREAD
 #include "jcompat.h"
@@ -110,29 +112,32 @@
 */
 
 //flags
-#define JDB_O_JRNL	(0x0001<<0)	//force journalling
-#define JDB_O_NOJRNL	(0x0001<<1)	//do not use journalling, if none of the flags set, the journalling will be used if available
-#define JDB_O_RDONLY	(0x0001<<2)	//read-only
-#define JDB_O_PACK	(0x0001<<3)	//pack everything, in any case the header is packed
-#define JDB_O_AIO	(0x0001<<4)	//use aio
-#define JDB_O_WR_THREAD	(0x0001<<5)	//use threaded write
+#define JDB_O_JRNL	(0x0001<<0)	//enable journalling
+#define JDB_O_LOG	(0x0001<<1)	//enable logging
+#define JDB_O_SNAP	(0x0001<<2)	//enable snapshots
+#define JDB_O_RDONLY	(0x0001<<3)	//read-only
+#define JDB_O_PACK	(0x0001<<4)	//pack everything, in any case the header is packed
+#define JDB_O_AIO	(0x0001<<5)	//enable aio
+#define JDB_O_WR_THREAD	(0x0001<<6)	//enable threaded write
 
 //encryption-crc
 #define JDB_CRC_NONE	0x00
 #define JDB_CRC_WIKI	0x01
-#define JDB_CRYPT_NONE	0x00
-#define JDB_CRYPT_AES	0x01
+#define JDB_CRYPT_NONE	JCRYPT_NONE
+#define JDB_CRYPT_AES	JCRYPT_AES
+#define JDB_CRYPT_DES3	JCRYPT_DES3
 
 //default
 #define JDB_DEF_FLAGS		JDB_O_PACK | JDB_O_WR_THREAD
 #define JDB_DEF_BLOCK_SIZE	4096
 #define JDB_DEF_FILENAME	L"1.jdb"
-#define JDB_DEF_KEY		L"smashthestate"
+#define JDB_DEF_KEY		L"jaysi13@gmail.com"
 #define JDB_DEF_MAPLIST_BUCK	25
 #define JDB_DEF_FAV_LOAD	10
 #define JDB_DEF_CRC		JDB_CRC_WIKI
 #define JDB_DEF_CRYPT		JDB_CRYPT_AES
-#define JDB_DEF_JRNL_EXT	L".jjr"
+#define JDB_DEF_JRNL_EXT	L".jdbjrnl"
+#define JDB_DEF_PREV_EXT	L".jdbprev"
 #define JDB_DEF_LIST_BUCK	10
 
 struct jdb_conf {
@@ -140,13 +145,13 @@ struct jdb_conf {
 	uint16_t blocksize;
 	uchar crc_type;
 	uchar crypt_type;
-	wchar_t *filename;
-	wchar_t *key;
 	uint32_t map_list_buck;	//jdb_bid_t
 	uint32_t list_buck;
 	uint32_t max_blocks;
 	uint32_t fav_load;//number of favourite blocks to load
-};
+	wchar_t *filename;
+	wchar_t *key;	
+}__attribute__((packed));
 
 /*
 	JDB Handle
@@ -164,10 +169,12 @@ struct jdb_handle {
 	uint16_t magic;
 	int fd;
 	aes_context aes;
+	des3_context des3;
+	rc4_ctx	rc4;
 	uint16_t flags;
 
 	//journalling
-	FILE* jf;
+	int jf;
 	jthread_t jrnlthid;
 	jmx_t jmx;
 	jsem_t jsem;
@@ -194,6 +201,9 @@ struct jdb_handle {
 	struct jdb_hdr hdr;
 	struct jdb_map_list map_list;
 	struct jdb_table_list table_list;	//only loaded tables will be put on this list
+	
+	//global indexing
+	struct jdb_index0_list index0_list;
 };
 
 /*				table-flags					*/
@@ -241,13 +251,14 @@ extern "C" {
 	int jdb_sync_table(struct jdb_handle *h, wchar_t * name);
 	int jdb_sync(struct jdb_handle* h);
 	int jdb_find_table(struct jdb_handle *h, wchar_t * name);
+	int jdb_sync_tables(struct jdb_handle* h);
 
 /*
 	table type
 */
 	int jdb_add_typedef(struct jdb_handle *h,
-			    wchar_t* table_name, uchar type_id,
-			    uchar base, uint32_t len, uchar flags);
+			    wchar_t* table_name, jdb_data_t type_id,
+			    jdb_data_t base, uint32_t len, uchar flags);
 	int jdb_rm_typedef(struct jdb_handle *h,
 			   wchar_t* table_name, uchar type_id);
 	int jdb_typedef_flags(	struct jdb_handle* h, wchar_t* table_name,
@@ -268,7 +279,7 @@ extern "C" {
 	int jdb_create_cell(struct jdb_handle *h, wchar_t * table,
 			    uint32_t col, uint32_t row,
 			    uchar * data, uint32_t datalen,
-			    uchar data_type);
+			    jdb_data_t data_type);
 	int jdb_load_cell(struct jdb_handle *h, wchar_t * table,
 			uint32_t col, uint32_t row, uchar** data,
 			uint32_t* datalen, uchar* data_type);
@@ -322,6 +333,12 @@ extern "C" {
 	info
 */
 	size_t jdb_max_table_name_size(struct jdb_handle* h);
+	
+/*
+	recovery
+*/	
+	int jdb_recover_journal(wchar_t* filename, wchar_t* key);
+	int jdb_recover_db(wchar_t* filename, wchar_t* key);
 	
 #ifdef __cplusplus
 }

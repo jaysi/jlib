@@ -19,7 +19,7 @@ void k_rc4_init
 #else
 void rc4_init
 #endif
- (uchar * key, int len, rc4_ctx * ctx) {
+ (uchar * key, uint32_t len, rc4_ctx * ctx) {
 	uchar index1, index2;
 	uchar *state = ctx->state;
 	uchar i;
@@ -47,12 +47,12 @@ void k_rc4
 #else
 void rc4
 #endif
- (uchar * data, int len, rc4_ctx * ctx) {
+ (uchar * data, uint32_t len, rc4_ctx * ctx) {
 #if 1
 	uchar *state = ctx->state;
 	uchar x = ctx->x;
 	uchar y = ctx->y;
-	int i;
+	uint32_t i;
 
 	for (i = 0; i < len; i++) {
 		uchar xor;

@@ -5,3 +5,6 @@ CRASH:
 HANG:
 	open(new db)->add table->add cell->close table->open table->add cell-
 	>sync table->listall cell->HANGS! (no dbg msg)
+
+** the above bugs probably come from dynamic memmory, use malloc debuggers 
+   on linux to debug it.

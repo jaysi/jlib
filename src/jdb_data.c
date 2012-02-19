@@ -10,7 +10,6 @@ int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 				uchar dtype, uchar flags){
 				
 	struct jdb_cell_data_blk *blk;
-	jdb_bent_t bent;
 	size_t dsize, base_len;
 	uchar base_type;
 
@@ -125,7 +124,7 @@ int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 
 	}
 
-					
+	return 0;				
 }
 
 int _jdb_add_fdata(struct jdb_handle *h, struct jdb_table *table, uchar dtype,
@@ -389,7 +388,7 @@ void _jdb_free_data_list(struct jdb_table *table)
 	}
 
 }
-
+/*
 int _jdb_load_data(struct jdb_handle *h, struct jdb_table *table, uchar type)
 {
 
@@ -398,12 +397,14 @@ int _jdb_load_data(struct jdb_handle *h, struct jdb_table *table, uchar type)
 	jdb_bid_t *bid;
 
 	jdb_bid_t nbid, i;	
-	struct jdb_map_blk_entry* m_ent;
+	//struct jdb_map_blk_entry* m_ent;
 	int ret;
 	
-	m_ent = _jdb_get_map_entry_ptr(h, *bid);
-	if(!m_ent) return -JE_NULLPTR;
-
+	
+	//_wdeb(L"WARNING: *BID IS USED UNINITIALIZED");
+	//m_ent = _jdb_get_map_entry_ptr(h, *bid);
+	//if(!m_ent) return -JE_NULLPTR;
+	
 	ret =
 	    _jdb_list_map_match(h, type, 0, table->main.hdr.tid, 0,
 				JDB_MAP_CMP_TID | JDB_MAP_CMP_BTYPE, &bid,
@@ -439,7 +440,8 @@ int _jdb_load_data(struct jdb_handle *h, struct jdb_table *table, uchar type)
 
 		blk->bid = bid[i];
 
-		ret = _jdb_read_data_blk(h, table, blk, m_ent->dtype);
+		//ret = _jdb_read_data_blk(h, table, blk, m_ent->dtype);
+		ret = _jdb_read_data_blk(h, table, blk, type);
 
 		if (ret < 0) {
 
@@ -481,6 +483,7 @@ int _jdb_load_data(struct jdb_handle *h, struct jdb_table *table, uchar type)
 	return 0;
 
 }
+*/
 
 int _jdb_write_data(struct jdb_handle *h, struct jdb_table *table)
 {
@@ -566,7 +569,7 @@ static inline int _jdb_alloc_cell_data_a_lt_1(struct jdb_handle *h, struct jdb_t
 	jdb_bid_t first_dptr_bid;
 	jdb_bent_t first_dptr_bent;
 	size_t pos;
-	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry, *dptr_last;
+	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry;
 	uint32_t typelen, baselen;
 	jdb_data_t base;
 	jdb_bent_t nset;	
@@ -649,6 +652,8 @@ static inline int _jdb_alloc_cell_data_a_lt_1(struct jdb_handle *h, struct jdb_t
 	nset = 0;
 	for(ret = 0; ret < nentries; ret++){
 		if(!test_bit(blk->bitmap, ret)){
+			_wdeb_alloc(L"copying byte [%u](is %c) from data to block pos %u [slot %i]",
+				pos, data[pos], ret*typelen, ret);
 			set_bit(blk->bitmap, ret);
 			memcpy(blk->datapool + ret*typelen, data + pos, typelen);
 			pos += typelen;
@@ -876,7 +881,8 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 
 			//need ? entries
 			
-			blk_ent_ptr = 0;		
+			blk_ent_ptr = 0;
+			blk_ent_list = (jdb_bent_t*)malloc(sizeof(jdb_bent_t)*nchunks);		
 			for(ret = 0; ret < nentries; ret++){
 				if(!test_bit(blk->bitmap, ret)){
 					blk_ent_list[blk_ent_ptr] = ret;
@@ -1031,11 +1037,10 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jdb_cell* cell){
 
 	int ret;
-	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry, *dptr_last;
+	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry;
 	size_t pos;
 	struct jdb_cell_data_blk* blk;
 	size_t copysize, copypos;	
-	jdb_data_t base;
 	uchar tflags;	
 
 	//#ret = fixed
@@ -1072,7 +1077,7 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 		copypos = cell->celldef->bent*blk->entsize;
 
 		memcpy(cell->data, blk->datapool + copypos, cell->celldef->datalen);
-		pos += copysize;
+		//pos += copysize;
 		
 		_wdeb_load(L"copypos = %u", copypos);
 		
@@ -1124,7 +1129,7 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 		memcpy(cell->data + pos, blk->datapool + copypos, copysize);
 		pos += copysize;
 				
-		_wdeb_load(L"copysize = %u, copypos = %u, pos = %u, blk->datapool = %s, cell->data = %ls", copysize, copypos, pos, blk->datapool + copypos, (wchar_t*)cell->data);
+		_wdeb_load(L"copysize = %u, copypos = %u, pos = %u (prev pos = %u), blk->datapool = %s, cell->data = %s", copysize, copypos, pos, pos-copysize, blk->datapool + copypos, cell->data);
 		
 	}
 	

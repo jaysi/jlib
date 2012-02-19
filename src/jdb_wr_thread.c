@@ -155,8 +155,6 @@ int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table){
 	struct jdb_fav_blk* fav_blk;
 	struct jdb_map* map;
 	
-	int ret = 0, ret2;
-	
 	_wdeb_wr(L"requesting write table write...");
 	
 	if(!(nbids = table->map_chg_ptr + table->nwrblk)) return 0;

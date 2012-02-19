@@ -752,7 +752,7 @@ int _jdb_unpack_data(	struct jdb_handle* h, struct jdb_table* table,
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		unpack(buf + sizeof(struct jdb_cell_data_blk_hdr) - sizeof(uint32_t),
 		       "l", &crc32);
-		       
+		       		       
 		_wdeb_crc(L"crc of packed data: 0x%08x", crc32);
 		
 		pack(buf + sizeof(struct jdb_cell_data_blk_hdr) - sizeof(uint32_t),
