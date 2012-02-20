@@ -1042,13 +1042,13 @@ int jdb_rm_col_type(struct jdb_handle *h, wchar_t* table_name, uint32_t col)
 	
 	//journalling
 	uint64_t chid;
-	size_t argsize[3];
+	size_t argsize[2];
 	
 	chid = _jdb_get_chid(h, 1);
 	argsize[0] = WBYTES(table_name);	
 	argsize[1] = sizeof(uint32_t);
-	_jdb_changelog_reg(h, chid, JDB_CMD_RM_COLTYPE, 0, 3, argsize,
-			table_name, type_id, col);	
+	_jdb_changelog_reg(h, chid, JDB_CMD_RM_COLTYPE, 0, 2, argsize,
+			table_name, col);
 	
 	if((ret = _jdb_table_handle(h, table_name, &table))<0){
 		_jdb_changelog_reg_end(h, chid, ret);

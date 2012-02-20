@@ -328,10 +328,6 @@ void jdbif_dump_block(struct jdb_handle *h)
 	case JDB_BTYPE_TABLE_FAV:
 		jdbif_dump_fav_blk(h, bid);
 		break;
-	case JDB_BTYPE_TID_INDEX:
-		wprintf(L"Not Implemented!\n");
-		//jdbif_dump_tid_index_block(h, bid);
-		break;
 	default:	
 		wprintf(L"ERROR: block type 0x%02x not understood!\n", btype);
 		break;

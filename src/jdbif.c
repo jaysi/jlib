@@ -76,7 +76,7 @@ int jdbif_stat(struct jdb_handle *h)
 		wprintf(L"number of blocks is %u\n", h->hdr.nblocks);
 		wprintf(L"number of nmaps is %u\n", h->hdr.nmaps);
 		wprintf(L"number of ntables is %u\n", h->hdr.ntables);
-		wprintf(L"number of write requests is %u\n", h->hdr.nwr);
+		wprintf(L"number of changes are %u\n", h->hdr.chid);
 
 		wprintf(L"db flags are (0x%04x): ", h->hdr.flags);
 		mask = 0x8000;
