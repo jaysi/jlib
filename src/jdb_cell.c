@@ -601,18 +601,18 @@ int jdb_create_cell(struct jdb_handle *h,
 	argsize[3] = datalen;
 	argsize[4] = sizeof(uint32_t);
 	argsize[5] = sizeof(jdb_data_t);
-	_jdb_jrnl_reg(h, chid, JDB_CMD_CREATE_CELL, 0, 6, argsize,
+	_jdb_changelog_reg(h, chid, JDB_CMD_CREATE_CELL, 0, 6, argsize,
 			table_name, col, row, data, datalen, dtype);
 	
 	if((ret = _jdb_table_handle(h, table_name, &table))<0){
-		_jdb_jrnl_reg_end(h, chid, ret);
+		_jdb_changelog_reg_end(h, chid, ret);
 		return ret;	
 	}
 
 	if (row > table->main.hdr.nrows) {
 
 		if (table->main.hdr.flags & JDB_TABLE_BIND_ROWS){
-			_jdb_jrnl_reg_end(h, chid, -JE_LIMIT);
+			_jdb_changelog_reg_end(h, chid, -JE_LIMIT);
 			return -JE_LIMIT;
 		}
 
@@ -621,21 +621,21 @@ int jdb_create_cell(struct jdb_handle *h,
 	if (col > table->main.hdr.ncols) {
 
 		if (table->main.hdr.flags & JDB_TABLE_BIND_COLS){
-			_jdb_jrnl_reg_end(h, chid, -JE_LIMIT);
+			_jdb_changelog_reg_end(h, chid, -JE_LIMIT);
 			return -JE_LIMIT;
 		}
 
 	}
 	
 	if (_jdb_find_cell_by_pos(h, table, row, col)){
-		_jdb_jrnl_reg_end(h, chid, -JE_EXISTS);
+		_jdb_changelog_reg_end(h, chid, -JE_EXISTS);
 		return -JE_EXISTS;
 	}
 
 	if (dtype > JDB_TYPE_NULL) {
 
 		if ((ret = _jdb_find_typedef(h, table, dtype, &typedef_blk, &typedef_entry)) < 0){
-			_jdb_jrnl_reg_end(h, chid, ret);
+			_jdb_changelog_reg_end(h, chid, ret);
 			return ret;
 		}
 			
@@ -643,7 +643,7 @@ int jdb_create_cell(struct jdb_handle *h,
 			if(datalen > typedef_entry->len ||
 			   datalen%typedef_entry->len){
 					
-				_jdb_jrnl_reg_end(h, chid, -JE_SIZE);
+				_jdb_changelog_reg_end(h, chid, -JE_SIZE);
 				return -JE_SIZE;
 			}
 		}
@@ -651,7 +651,7 @@ int jdb_create_cell(struct jdb_handle *h,
 	} else {//base types, you forgot
 
 		if ((ret = _jdb_check_datalen(dtype, datalen)) < 0){
-			_jdb_jrnl_reg_end(h, chid, ret);
+			_jdb_changelog_reg_end(h, chid, ret);
 			return ret;
 		}
 
@@ -660,7 +660,7 @@ int jdb_create_cell(struct jdb_handle *h,
 	if (table->main.hdr.flags & JDB_TABLE_ENFORCE_COL_TYPE) {
 
 		if (dtype != jdb_find_col_type(h, table_name, col)){
-			_jdb_jrnl_reg_end(h, chid, ret);
+			_jdb_changelog_reg_end(h, chid, ret);
 			return -JE_TYPE;
 		}
 
@@ -674,7 +674,7 @@ int jdb_create_cell(struct jdb_handle *h,
 			      JDB_ID_INVAL, JDB_BENT_INVAL, &celldef_blk,
 			      &celldef_entry))<0){
 					
-		_jdb_jrnl_reg_end(h, chid, ret);
+		_jdb_changelog_reg_end(h, chid, ret);
 		return ret;
 
 	}
@@ -686,7 +686,7 @@ int jdb_create_cell(struct jdb_handle *h,
 	if (!cell) {
 
 		_jdb_rm_celldef(h, table, row, col);
-		_jdb_jrnl_reg_end(h, chid, -JE_MALOC);
+		_jdb_changelog_reg_end(h, chid, -JE_MALOC);
 		return -JE_MALOC;
 
 	}
@@ -702,7 +702,7 @@ int jdb_create_cell(struct jdb_handle *h,
 
 			_jdb_rm_celldef(h, table, row, col);
 			free(cell);
-			_jdb_jrnl_reg_end(h, chid, -JE_MALOC);
+			_jdb_changelog_reg_end(h, chid, -JE_MALOC);
 			return -JE_MALOC;
 
 		}
@@ -754,7 +754,7 @@ int jdb_create_cell(struct jdb_handle *h,
 				free(cell);
 				_wdeb_add(L"removing celldef");
 				_jdb_rm_celldef(h, table, row, col);
-				_jdb_jrnl_reg_end(h, chid, ret);
+				_jdb_changelog_reg_end(h, chid, ret);
 				return ret;
 			}			
 		} else {
@@ -766,7 +766,7 @@ int jdb_create_cell(struct jdb_handle *h,
 				free(cell);
 				_wdeb_add(L"removing celldef");
 				_jdb_rm_celldef(h, table, row, col);
-				_jdb_jrnl_reg_end(h, chid, ret);
+				_jdb_changelog_reg_end(h, chid, ret);
 				return ret;
 			}
 			
@@ -798,7 +798,7 @@ int jdb_create_cell(struct jdb_handle *h,
 
 	table->main.hdr.ncells++;
 	
-	_jdb_jrnl_reg_end(h, chid, ret);
+	_jdb_changelog_reg_end(h, chid, ret);
 	
 	return ret;
 
@@ -878,11 +878,11 @@ int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
 	argsize[0] = WBYTES(table_name);
 	argsize[1] = sizeof(uint32_t);
 	argsize[2] = sizeof(uint32_t);
-	_jdb_jrnl_reg(h, chid, JDB_CMD_RM_CELL, 0, 3, argsize,
+	_jdb_changelog_reg(h, chid, JDB_CMD_RM_CELL, 0, 3, argsize,
 			table_name, col, row);
 	
 	if((ret = _jdb_table_handle(h, table_name, &table)) < 0){
-		_jdb_jrnl_reg_end(h, chid, ret);
+		_jdb_changelog_reg_end(h, chid, ret);
 		return ret;
 	}
 
@@ -924,11 +924,11 @@ int jdb_rm_cell(struct jdb_handle* h, wchar_t * table_name,
 		_jdb_free_cell(cell);
 		
 		table->main.hdr.ncells--;
-		_jdb_jrnl_reg_end(h, chid, 0);
+		_jdb_changelog_reg_end(h, chid, 0);
 		return 0;
 	}
 	
-	_jdb_jrnl_reg_end(h, chid, -JE_NOTFOUND);
+	_jdb_changelog_reg_end(h, chid, -JE_NOTFOUND);
 	return -JE_NOTFOUND;
 	
 	

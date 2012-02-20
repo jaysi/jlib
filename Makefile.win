@@ -4,8 +4,8 @@
 CPP      = g++.exe -D__DEBUG__
 CC       = gcc.exe -D__DEBUG__
 WINDRES  = windres.exe
-OBJ      = src/aes.o src/crc.o src/debug.o src/des.o src/ecc.o src/hardio.o src/jcs.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_undo.o src/jdb_wr_thread.o src/jer.o src/jhash.o src/jpack.o src/jrand.o src/jss.o src/jtable.o src/memmem.o src/rc4.o src/sha256.o $(RES)
-LINKOBJ  = src/aes.o src/crc.o src/debug.o src/des.o src/ecc.o src/hardio.o src/jcs.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_jrnl.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_undo.o src/jdb_wr_thread.o src/jer.o src/jhash.o src/jpack.o src/jrand.o src/jss.o src/jtable.o src/memmem.o src/rc4.o src/sha256.o $(RES)
+OBJ      = src/aes.o src/crc.o src/debug.o src/des.o src/ecc.o src/hardio.o src/jcs.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_chlog.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_undo.o src/jdb_wr_thread.o src/jer.o src/jhash.o src/jpack.o src/jrand.o src/jss.o src/jtable.o src/memmem.o src/rc4.o src/sha256.o $(RES)
+LINKOBJ  = src/aes.o src/crc.o src/debug.o src/des.o src/ecc.o src/hardio.o src/jcs.o src/jdb.o src/jdb_blk_calc.o src/jdb_block.o src/jdb_cell.o src/jdb_data.o src/jdb_data_ptr.o src/jdb_fav.o src/jdb_hash.o src/jdb_hdr.o src/jdb_index.o src/jdb_io.o src/jdb_chlog.o src/jdb_list.o src/jdb_map.o src/jdb_mem.o src/jdb_pack.o src/jdb_table.o src/jdb_type.o src/jdb_undo.o src/jdb_wr_thread.o src/jer.o src/jhash.o src/jpack.o src/jrand.o src/jss.o src/jtable.o src/memmem.o src/rc4.o src/sha256.o $(RES)
 LIBS     = -pg -L"C:/Program Files/Dev-Cpp/MinGW32/lib" -static-libstdc++ -static-libgcc --export-all-symbols --add-stdcall-alias 'C:/Program Files/Dev-Cpp/MinGW32/lib/libpthread.a' 'C:/Program Files/Dev-Cpp/MinGW32/lib/libws2_32.a'  -g3 
 INCS     = -I"C:/Program Files/Dev-Cpp/MinGW32/include"  -I"J:/comp/dev/src/jlib/include" 
 CXXINCS  = -I"C:/Program Files/Dev-Cpp/MinGW32/include"  -I"J:/comp/dev/src/jlib/include" 
@@ -83,8 +83,8 @@ src/jdb_index.o: src/jdb_index.c
 src/jdb_io.o: src/jdb_io.c
 	$(CC) -c src/jdb_io.c -o src/jdb_io.o $(CFLAGS)
 
-src/jdb_jrnl.o: src/jdb_jrnl.c
-	$(CC) -c src/jdb_jrnl.c -o src/jdb_jrnl.o $(CFLAGS)
+src/jdb_chlog.o: src/jdb_chlog.c
+	$(CC) -c src/jdb_chlog.c -o src/jdb_chlog.o $(CFLAGS)
 
 src/jdb_list.o: src/jdb_list.c
 	$(CC) -c src/jdb_list.c -o src/jdb_list.o $(CFLAGS)

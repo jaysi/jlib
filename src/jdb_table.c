@@ -57,7 +57,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	argsize[2] = sizeof(uint32_t);
 	argsize[3] = sizeof(uchar);
 	argsize[4] = sizeof(uint16_t);
-	_jdb_jrnl_reg(h, chid, JDB_CMD_CREATE_TABLE, 0, 5, argsize, name, nrows, ncols, flags, indexes);	
+	_jdb_changelog_reg(h, chid, JDB_CMD_CREATE_TABLE, 0, 5, argsize, name, nrows, ncols, flags, indexes);	
 
 	/*
 	   1. is exists?
@@ -68,7 +68,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	if (_jdb_find_first_map_match(h, 0, 0, tid, 0, JDB_MAP_CMP_TID)
 	    != JDB_ID_INVAL){
-		_jdb_jrnl_reg_end(h, chid, -JE_EXISTS);
+		_jdb_changelog_reg_end(h, chid, -JE_EXISTS);
 		return -JE_EXISTS;
 	}
 
@@ -76,14 +76,14 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	     wtojcs_len(name,
 			h->hdr.blocksize - (sizeof(struct jdb_table_def_blk_hdr)
 					    + 1))) == ((size_t) - 1)){
-		_jdb_jrnl_reg_end(h, chid, -JE_TOOLONG);
+		_jdb_changelog_reg_end(h, chid, -JE_TOOLONG);
 		return -JE_TOOLONG;
 	}
 
 	table = (struct jdb_table *)malloc(sizeof(struct jdb_table));
 
 	if (!table){
-		_jdb_jrnl_reg_end(h, chid, -JE_MALOC);
+		_jdb_changelog_reg_end(h, chid, -JE_MALOC);
 		return -JE_MALOC;
 	}
 
@@ -95,7 +95,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 		_wdeb(L"failed to get table_def_bid");
 
 		free(table);
-		_jdb_jrnl_reg_end(h, chid, -JE_LIMIT);
+		_jdb_changelog_reg_end(h, chid, -JE_LIMIT);
 		return -JE_LIMIT;
 
 	}
@@ -160,7 +160,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 		h->table_list.cnt++;
 	}
 
-	_jdb_jrnl_reg_end(h, chid, 0);
+	_jdb_changelog_reg_end(h, chid, 0);
 	return 0;
 
 }
@@ -593,7 +593,7 @@ int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 	
 	chid = _jdb_get_chid(h, 1);
 	argsize = WBYTES(name);
-	_jdb_jrnl_reg(h, chid, JDB_CMD_RM_TABLE, 0, 1, &argsize, name);
+	_jdb_changelog_reg(h, chid, JDB_CMD_RM_TABLE, 0, 1, &argsize, name);
 	
 	prev = h->table_list.first;
 	entry = prev;
@@ -619,7 +619,7 @@ int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 	}
 	
 	if(!entry){
-		_jdb_jrnl_reg_end(h, chid, -JE_NOTFOUND);
+		_jdb_changelog_reg_end(h, chid, -JE_NOTFOUND);
 		return -JE_NOTFOUND;	
 	}
 	
@@ -645,7 +645,7 @@ int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
 	_jdb_unlock_handle(h);			
 
-	_jdb_jrnl_reg(h, chid, 0);
+	_jdb_changelog_reg_end(h, chid, 0);
 	
 	return 0;
 }

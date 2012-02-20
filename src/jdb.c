@@ -105,11 +105,11 @@ void _jdb_calc_bentries(struct jdb_handle *h)
 	    sizeof(struct jdb_celldef_blk_entry);
 	h->hdr.index1_bent =
 	    (h->hdr.blocksize -
-	     sizeof(struct jdb_index1_blk_hdr)) /
+	     sizeof(struct jdb_index_blk_hdr)) /
 	    sizeof(struct jdb_index1_blk_entry);
 	h->hdr.index0_bent =
 	    (h->hdr.blocksize -
-	     sizeof(struct jdb_index0_blk_hdr)) /
+	     sizeof(struct jdb_index_blk_hdr)) /
 	    sizeof(struct jdb_index0_blk_entry);
 	h->hdr.dptr_bent =
 	    (h->hdr.blocksize -
@@ -150,7 +150,7 @@ int jdb_init(struct jdb_handle *h)
 	h->conf.filename = NULL;
 	h->conf.key = NULL;
 
-	h->jf =NULL;
+	h->jfd = -1;
 
 	h->fd = -1;
 
@@ -172,9 +172,9 @@ int _jdb_cleanup_handle(struct jdb_handle *h)
 		close(h->fd);
 		h->fd = -1;
 	}
-	if (h->jf != NULL) {
-		fclose(h->jf);
-		h->jf = NULL;
+	if (h->jfd != -1) {
+		close(h->jfd);
+		h->jfd = -1;
 	}
 	if (h->conf.filename) {
 		free(h->conf.filename);
@@ -468,7 +468,7 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 	
 	if(!ret){		
 		//journalling
-		ret = _jdb_jrnl_open(h);
+		ret = _jdb_jrnl_open(h, h->conf.filename, 0);
 		if(ret == -JE_EXISTS){
 			ret = _jdb_jrnl_recover(h);
 		}	

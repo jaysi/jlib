@@ -9,7 +9,7 @@
 #define _JDB_H
 
 #include "jdb_intern.h"
-#include "jdb_jrnl.h"
+#include "jdb_chlog.h"
 #include "jdb_list.h"
 #include "jtypes.h"
 #include "jtable.h"
@@ -174,7 +174,7 @@ struct jdb_handle {
 	uint16_t flags;
 
 	//journalling
-	int jf;
+	int jfd;
 	jthread_t jrnlthid;
 	jmx_t jmx;
 	jsem_t jsem;
@@ -203,7 +203,7 @@ struct jdb_handle {
 	struct jdb_table_list table_list;	//only loaded tables will be put on this list
 	
 	//global indexing
-	struct jdb_index0_list index0_list;
+	struct jdb_index0_blk_list index0_list;
 };
 
 /*				table-flags					*/

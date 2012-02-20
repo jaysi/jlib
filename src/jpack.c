@@ -7,6 +7,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "jpacki.c"
+
 #define _wdeb_crc
 
 /*
@@ -147,7 +149,7 @@ unsigned long long unpacki64(unsigned char *buf)
 	return (buf[0] << 56) | (buf[1] << 48) | (buf[2] << 40) | (buf[3] << 32)
 	    | (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
 }
-*/
+
 
 /*
 ** pack() -- store data dictated by the format string in the buffer

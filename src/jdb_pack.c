@@ -1,5 +1,6 @@
 #include "jdb.h"
 #include "jpack.h"
+#include "jpacki.c"
 
 /*
 	all pack/unpack functions must set/check crc too!
@@ -84,7 +85,7 @@ int _jdb_pack_hdr(struct jdb_hdr *hdr, uchar * buf)
 		hdr->nblocks,
 		hdr->nmaps,
 		hdr->ntables,
-		hdr->nwr
+		hdr->chid
 		);
 		
 		memcpy(buf + sizeof(struct jdb_hdr) - PWHASHSIZE - sizeof(uint32_t),
@@ -134,7 +135,7 @@ int _jdb_unpack_hdr(struct jdb_hdr *hdr, uchar * buf)
 		&hdr->nblocks,
 		&hdr->nmaps,
 		&hdr->ntables,
-		&hdr->nwr
+		&hdr->chid
 		);
 		
 		memcpy(hdr->pwhash,

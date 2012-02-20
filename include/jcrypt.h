@@ -4,7 +4,7 @@
 #include "rc4.h"
 
 //special
-#define JCRYPT_NONE	0x01	//no encryption
+#define JCRYPT_NONE	0x00	//no encryption
 
 //symmetric key - block cipher
 #define JCRYPT_AES	0x01

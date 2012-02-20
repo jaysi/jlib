@@ -26,8 +26,6 @@
 
 #define JDB_HDR_SIZE	1024
 
-#define JDB_HFLAG_AIO	(0x01<<1)
-
 /*				types					*/
 typedef uint32_t jdb_bid_t;	//block id
 typedef uint32_t jdb_tid_t;	//table id
@@ -86,7 +84,7 @@ struct jdb_hdr {
 	jdb_bid_t nblocks;	//number of blocks
 	jdb_bid_t nmaps;	//number of map blocks
 	jdb_tid_t ntables;
-	uint64_t nchid;		//change id
+	uint64_t chid;		//change id
 	
 	uchar pwhash[PWHASHSIZE];	/*sha256 */
 	
@@ -107,9 +105,8 @@ struct jdb_hdr {
 #define JDB_BTYPE_CELL_DATA_VAR	0x07
 #define JDB_BTYPE_CELL_DATA_FIX 0x08
 #define JDB_BTYPE_CELL_DATA_PTR	0x09
-#define JDB_BTYPE_INDEX		0x0a
+#define JDB_BTYPE_INDEX		0x0a	/*index, see map_entry's dtype field*/
 #define JDB_BTYPE_TABLE_FAV	0x0b	/*block-rating*/
-#define JDB_BTYPE_INDEX		0x0c	/*index, see map_entry's dtype field*/
 #define JDB_BTYPE_VOID		0xff	/*void blocks type, mainly for
 					   memmory allocations */
 
@@ -549,6 +546,21 @@ struct jdb_table_list {
 	struct jdb_table *last;
 };
 
+struct jdb_wr_fifo_entry{
+	jdb_bid_t nblocks;
+	jdb_bid_t* bid_list;
+	uint32_t bufsize;
+	uchar* hdrbuf;
+	uchar* buf;
+	struct jdb_wr_fifo_entry* next;
+};
+
+struct jdb_wr_fifo{
+	uint32_t cnt;
+	struct jdb_wr_fifo_entry* first, *last;
+};
+
+
 /*
 	init / cleanup
 */
@@ -800,9 +812,11 @@ int _jdb_load_cells(struct jdb_handle *h, struct jdb_table *table, int loaddata)
 int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table);
 int _jdb_hdr_to_buf(struct jdb_handle* h, uchar** buf, int alloc);
 		    
-int _jdb_jrnl_reg(struct jdb_handle* h, uint64_t chid , uchar cmd, int ret, uchar nargs, size_t* argsize, ...);
+int _jdb_changelog_reg(struct jdb_handle* h, uint64_t chid , uchar cmd, int ret, uchar nargs, size_t* argsize, ...);
 int _jdb_jrnl_recover(struct jdb_handle* h);
-int _jdb_jrnl_reg_end(struct jdb_handle* h, uint64_t chid, int ret);			
+int _jdb_changelog_reg_end(struct jdb_handle* h, uint64_t chid, int ret);			
+int _jdb_jrnl_open(struct jdb_handle *h, wchar_t * filename, uint16_t flags);
+uint64_t _jdb_get_chid(struct jdb_handle *h, int lock);
 
 /*
 	MACROs

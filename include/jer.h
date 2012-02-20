@@ -109,7 +109,12 @@
 /*
 
 */
-#define JE_NOJCS	130
+#define JE_NOJCS	140
+
+/*
+
+*/
+#define JE_CRYPT	150
 
 #define JEF_FILELOG	_8b0
 #define JEF_TIMELOG	_8b1
