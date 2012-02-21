@@ -66,7 +66,7 @@ int _jdb_read_block(struct jdb_handle *h, uchar * block, jdb_bid_t bid)
 jdb_bid_t _jdb_get_empty_bid(struct jdb_handle * h, int zero_map_entry)
 {
 
-	jdb_bid_t bid;
+	jdb_bid_t bid = JDB_ID_INVAL;
 
 	jdb_bent_t bent;
 

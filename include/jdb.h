@@ -119,6 +119,8 @@
 #define JDB_O_PACK	(0x0001<<4)	//pack everything, in any case the header is packed
 #define JDB_O_AIO	(0x0001<<5)	//enable aio
 #define JDB_O_WR_THREAD	(0x0001<<6)	//enable threaded write
+#define JDB_O_UNDO	(0x0001<<6)	//enable undo function
+
 
 //encryption-crc
 #define JDB_CRC_NONE	0x00
@@ -128,7 +130,7 @@
 #define JDB_CRYPT_DES3	JCRYPT_DES3
 
 //default
-#define JDB_DEF_FLAGS		JDB_O_PACK | JDB_O_WR_THREAD
+#define JDB_DEF_FLAGS		JDB_O_PACK | JDB_O_WR_THREAD | JDB_O_JRNL | JDB_O_SNAP | JDB_O_UNDO
 #define JDB_DEF_BLOCK_SIZE	4096
 #define JDB_DEF_FILENAME	L"1.jdb"
 #define JDB_DEF_KEY		L"jaysi13@gmail.com"

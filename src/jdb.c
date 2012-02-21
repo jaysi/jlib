@@ -449,10 +449,13 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 	}
 
 	_jdb_copy_conf_to_hdr(h);
+	
+	ret = 0;
 		
 	if(h->hdr.flags & JDB_O_WR_THREAD){
 		ret = _jdb_init_wr_thread(h);
 	}
+	
 	if(ret < 0) return ret;
 
 	_wdeb_startup(L"creating jdb < %ls >", h->conf.filename);

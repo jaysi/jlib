@@ -224,14 +224,14 @@ int _jdb_create_dptr_chain(struct jdb_handle* h, struct jdb_table* table,
 				jdb_bid_t* first_bid, jdb_bent_t* first_bent){
 
 	struct jdb_cell_data_ptr_blk* blk;
-	struct jdb_cell_data_ptr_blk_entry* last, *entry;
+	struct jdb_cell_data_ptr_blk_entry* last = NULL, *entry;
 
 	jdb_bid_t n = needed;
 	jdb_bent_t bent, added_in_this_blk;
 	int ret;
 	*list = NULL;
 
-again:	
+again:
 	
 	for(blk = table->data_ptr_list.first; blk; blk = blk->next){
 		_wdeb_find(L"blk->nent = %u, h->hdr.dptr_bent = %u", blk->nent, h->hdr.dptr_bent);
@@ -243,9 +243,9 @@ again:
 						*list = &blk->entry[bent];
 						last = *list;
 						*first_bid = blk->bid;
-						*first_bent = bent;						
-													
+						*first_bent = bent;											
 					} else {
+						assert(last);
 						last->next = &blk->entry[bent];
 						last->nextdptrbid = blk->bid;
 						last->nextdptrbent = bent;
@@ -258,7 +258,8 @@ again:
 					
 					if(!n){
 						_wdeb_find(L"added in this block = %u", added_in_this_blk);
-						_jdb_inc_map_nful_by_bid(h, blk->bid, added_in_this_blk);// OnUse						
+						_jdb_inc_map_nful_by_bid(h, blk->bid, added_in_this_blk);// OnUse
+						if(!last) return -JE_UNK;
 						last->next = NULL;
 						last->nextdptrbid = JDB_ID_INVAL;
 						
@@ -281,7 +282,8 @@ again:
 		}
 	}
 
-	if(!n){
+	if(!n){//technically never code reaches here!
+		if(!last) return -JE_UNK;
 		last->next = NULL;
 		last->nextdptrbid = JDB_ID_INVAL;
 
@@ -359,6 +361,8 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 	
 	_wdeb_load(L"first dptr bid = %u, first dptr bent = %u", cell->celldef->bid_entry, cell->celldef->bent);
 	
+	first = NULL;
+	
 	for(blk = table->data_ptr_list.first; blk; blk = blk->next){
 		if(blk->bid == cell->celldef->bid_entry){
 			first = &blk->entry[cell->celldef->bent];
@@ -369,6 +373,8 @@ int _jdb_load_dptr_chain(	struct jdb_handle* h, struct jdb_table* table,
 			break;				
 		}
 	}
+	
+	if(!first) return -JE_UNK;
 	
 	last = first;
 	while(last->nextdptrbid != JDB_ID_INVAL){

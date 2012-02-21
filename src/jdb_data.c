@@ -772,7 +772,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 	
 	_wdeb_add(L"called.");
 	
-	typelen = _jdb_data_len(h, table, dtype, &base, &baselen); 
+	typelen = _jdb_data_len(h, table, dtype, &base, &baselen);
 	if(!typelen || typelen == JDB_SIZE_INVAL) return -JE_TYPE;
 	
 	nchunks = datalen / typelen;
@@ -856,6 +856,11 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 			//*(dptr_list->write) = 1;
 			dptr_list = dptr_list->next;
 			if(!dptr_list->next) dptr_last = dptr_list;
+			else{//find dptr_last
+				dptr_last = dptr_list;
+				while(dptr_list->next)
+					dptr_list = dptr_list->next;
+			}
 		}
 
 		if(nchunks % nentries){ //add last chunks too!
@@ -937,7 +942,7 @@ _jdb_alloc_cell_data(struct jdb_handle *h, struct jdb_table *table,
 			//glue two lists
 			dptr_last->next = dptr_list;
 			dptr_last->nextdptrbid = first_dptr_bid;
-			dptr_last->nextdptrbent = first_dptr_bid;			
+			dptr_last->nextdptrbent = first_dptr_bid;
 
 			/* copy data to the block's datapool*/
 			pos = 0;
@@ -1040,8 +1045,8 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 	struct jdb_cell_data_ptr_blk_entry* dptr_list, *dptr_entry;
 	size_t pos;
 	struct jdb_cell_data_blk* blk;
-	size_t copysize, copypos;	
-	uchar tflags;	
+	size_t copysize, copypos;
+	uchar tflags;
 
 	//#ret = fixed
 	ret = 0;
@@ -1106,7 +1111,7 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 
 	pos = 0;
 	
-	_wdeb_load(L"loading data blocks...");	
+	_wdeb_load(L"loading data blocks...");
 
 	for(dptr_entry = dptr_list; dptr_entry; dptr_entry = dptr_entry->next){
 		
@@ -1142,16 +1147,6 @@ int _jdb_load_cell_data(struct jdb_handle* h, struct jdb_table* table, struct jd
 	//dptr_entry = cell->dptr;
 	//cell->dptr = cell->dptr->next;
 	//free(dptr_entry);
-	#ifndef NDEBUG
-	wprintf(L"CELLDATA: ");
-	for(pos = 0; pos < cell->celldef->datalen; pos++){
-		wprintf(L"%u,%c;", pos, cell->data[pos]);
-	}
-	wprintf(L"\n");
-	if(memcmp(cell->data, blk->datapool, cell->celldef->datalen)){
-		wprintf(L"WARNING::::\n");
-	}
-	#endif
 	
 	_wdeb_crc(L"celldata crc is 0x%08x", _jdb_crc(cell->data, cell->celldef->datalen));
 	

@@ -507,7 +507,7 @@ int _jdb_list_map_match(struct jdb_handle *h, jdb_blk_t btype, jdb_data_t dtype,
 	struct jdb_map *map;
 	jdb_bent_t i;
 	int match_needed = 0, matches;
-	int buck_cnt;	
+	int buck_cnt = 0;	
 
 	*n = 0UL;
 	*bid = NULL;
