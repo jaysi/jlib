@@ -3,8 +3,6 @@
 
 #include <unistd.h>
 
-#define _wdeb_startup _wdeb
-
 /*
 #ifdef _WIN32
 #define sleep(sec) Sleep(1000*sec)
@@ -545,6 +543,19 @@ int jdb_close(struct jdb_handle *h)
 			#endif
 		}
 	
+	}
+	
+	if(h->hdr.flags & JDB_O_JRNL){
+		_jdb_request_jrnl_exit(h);
+		
+		while(semval){
+			if(sem_getvalue(&h->jsem, &semval) < 0) break;
+			#ifndef _WIN32
+			if(semval) sleep(1);
+			#endif
+		}		
+		
+		_jdb_jrnl_close(h);
 	}
 	
 	h->fd = -1;

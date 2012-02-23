@@ -1,12 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_data_ptr	_wdeb
-#define _wdeb_add	_wdeb
-#define _wdeb_find	_wdeb
-#define _wdeb_load	_wdeb
-#define _wdeb_crc	_wdeb
-#define _wdeb_free	_wdeb
-
 static inline int _jdb_check_datalen(uchar dtype, uint32_t datalen)
 {
 

@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=000000000010000010100000000
-UnitCount=63
+UnitCount=65
 
 [VersionInfo]
 Major=1
@@ -661,9 +661,9 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit64]
-FileName=include\jdb_chlog.h
+FileName=src\jdb_snap.c
 CompileCpp=0
-Folder=db
+Folder=
 Compile=1
 Link=1
 Priority=1000
@@ -671,7 +671,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit65]
-FileName=TODO
+FileName=include\jdb_debug.h
 CompileCpp=0
 Folder=
 Compile=1

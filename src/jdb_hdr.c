@@ -1,7 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_wr	_wdeb
-
 /*
 void _jdb_lock_hdr(struct jdb_handle* h){
 

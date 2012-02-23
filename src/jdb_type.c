@@ -1,10 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_type _wdeb
-#define _wdeb_load _wdeb
-#define _wdeb_data_ptr _wdeb
-#define _wdeb_add _wdeb
-#define _wdeb_find _wdeb
 
 size_t _jdb_base_dtype_size(uchar dtype)
 {

@@ -1,9 +1,4 @@
 #include "jdb.h"
-#define _wdeb_table_def(f, a...)
-#define _wdeb_table(f, a...)
-#define _wdeb_load _wdeb
-#define _wdeb_data_ptr	_wdeb
-#define _wdeb_wr _wdeb
 
 #define _jdb_get_tid(wname) _jdb_hash((uchar*)wname, WBYTES(wname))
 

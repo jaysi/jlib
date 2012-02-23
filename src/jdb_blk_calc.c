@@ -1,8 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_calc	_wdeb
-#define _wdeb_find	_wdeb
-
 jdb_bent_t _jdb_calc_bent(jdb_bsize_t blk_size, uint16_t ent_size,
 			  uint16_t blk_hdr_size, uint16_t * pad)
 {

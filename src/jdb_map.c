@@ -1,13 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_map(f, a...)
-#define _wdeb_nful _wdeb
-#define _wdeb_list_map(f, a...)
-#define _wdeb_find	_wdeb
-#define _wdeb_inc _wdeb
-#define _wdeb_tm _wdeb
-#define _wdeb_rm _wdeb
-
 jdb_bent_t _jdb_max_nful(struct jdb_handle * h, jdb_blk_t btype)
 {
 	switch (btype) {

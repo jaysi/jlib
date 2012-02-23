@@ -7,11 +7,6 @@
 
 #include "jdb.h"
 
-#define _wdeb_start	_wdeb
-#define _wdeb_pos	_wdeb
-#define _wdeb_proc	_wdeb
-#define _wdeb_reg	_wdeb
-
 static inline void _jdb_jrnl_hdr_to_buf(struct jdb_changelog_hdr* hdr, uchar* buf){
 	memcpy(buf, (void*)&hdr->recsize, sizeof(uint32_t));	
 	memcpy(buf + sizeof(uint32_t), (void*)&hdr->chid, sizeof(uint64_t));
@@ -61,6 +56,8 @@ void* _jdb_jrnl_thread(void* arg){
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldcancelstate);
 		
 		//write here
+		
+		_wdeb_io(L"writing %u bytes...", *((uint32_t*)entry->buf));
 		
 		rc4(entry->buf + sizeof(uint32_t), entry->bufsize - sizeof(uint32_t), &h->rc4);
 		
@@ -268,6 +265,7 @@ int _jdb_jrnl_close(struct jdb_handle *h)
 	_commit(h->jfd);
 #endif
 	jfilename = _jdb_jrnl_filename(h, h->conf.filename, JDB_DEF_JRNL_EXT);
+	_wdeb_io(L"closing %ls", jfilename);
 	unlink(jfilename);
 	free(jfilename);
 	close(h->jfd);
@@ -288,7 +286,9 @@ static inline int _jdb_jrnl_get_rec_hdr(struct jdb_handle* h, struct jdb_changel
 
 int _jdb_jrnl_get_rec(struct jdb_handle* h, struct jdb_changelog_rec* rec){
 	size_t red;
-	uint32_t recsize;	
+	uint32_t recsize;
+	
+	_wdeb_io(L"reading kernel...");
 	
 	//if((ret = _jdb_jrnl_get_rec_hdr(h, &rec->hdr)) < 0) return ret;
 	
@@ -347,7 +347,7 @@ static inline void _jdb_free_changelog_rec(struct jdb_changelog_rec* rec){
 	if(rec->buf) free(rec->buf);
 }
 
-static inline int _jdb_jrnl_chk_create_table(struct jdb_changelog_rec* rec, struct jdb_jrnl_create_table* s){
+static inline int _jdb_changelog_parse_create_table(struct jdb_changelog_rec* rec, struct jdb_changelog_create_table* s){
 
 	/*
 		args {
@@ -381,7 +381,7 @@ static inline int _jdb_jrnl_chk_create_table(struct jdb_changelog_rec* rec, stru
 	return 0;
 }
 
-static inline int _jdb_jrnl_chk_rm_table(struct jdb_changelog_rec* rec, struct jdb_jrnl_rm_table* s){
+static inline int _jdb_changelog_parse_rm_table(struct jdb_changelog_rec* rec, struct jdb_changelog_rm_table* s){
 	
 	/*
 		args {
@@ -398,7 +398,7 @@ static inline int _jdb_jrnl_chk_rm_table(struct jdb_changelog_rec* rec, struct j
 	return 0;
 }
 
-static inline int _jdb_jrnl_chk_add_typedef(struct jdb_changelog_rec* rec, struct jdb_jrnl_add_typedef* s){
+static inline int _jdb_changelog_parse_add_typedef(struct jdb_changelog_rec* rec, struct jdb_changelog_add_typedef* s){
 	
 	/*
 		args {
@@ -431,7 +431,7 @@ static inline int _jdb_jrnl_chk_add_typedef(struct jdb_changelog_rec* rec, struc
 	return 0;
 }
 
-static inline int _jdb_jrnl_chk_rm_typedef(struct jdb_changelog_rec* rec, struct jdb_jrnl_rm_typedef* s){
+static inline int _jdb_changelog_parse_rm_typedef(struct jdb_changelog_rec* rec, struct jdb_changelog_rm_typedef* s){
 	
 	/*
 		args {
@@ -455,7 +455,7 @@ static inline int _jdb_jrnl_chk_rm_typedef(struct jdb_changelog_rec* rec, struct
 	return 0;
 }
 
-static inline int _jdb_jrnl_chk_assign_coltype(struct jdb_changelog_rec* rec, struct jdb_jrnl_assign_coltype* s){
+static inline int _jdb_changelog_parse_assign_coltype(struct jdb_changelog_rec* rec, struct jdb_changelog_assign_coltype* s){
 	
 	/*
 		args {
@@ -482,7 +482,7 @@ static inline int _jdb_jrnl_chk_assign_coltype(struct jdb_changelog_rec* rec, st
 	return 0;
 }
 
-static inline int _jdb_jrnl_chk_rm_coltype(struct jdb_changelog_rec* rec, struct jdb_jrnl_rm_coltype* s){
+static inline int _jdb_changelog_parse_rm_coltype(struct jdb_changelog_rec* rec, struct jdb_changelog_rm_coltype* s){
 	
 	/*
 		args {
@@ -507,7 +507,7 @@ static inline int _jdb_jrnl_chk_rm_coltype(struct jdb_changelog_rec* rec, struct
 }
 
 
-static inline int _jdb_jrnl_chk_create_cell(struct jdb_changelog_rec* rec, struct jdb_jrnl_create_cell* s){
+static inline int _jdb_changelog_parse_create_cell(struct jdb_changelog_rec* rec, struct jdb_changelog_create_cell* s){
 	
 	/*
 		args {
@@ -542,7 +542,7 @@ static inline int _jdb_jrnl_chk_create_cell(struct jdb_changelog_rec* rec, struc
 	return 0;
 }
 
-static inline int _jdb_jrnl_chk_rm_cell(struct jdb_changelog_rec* rec, struct jdb_jrnl_rm_cell* s){
+static inline int _jdb_changelog_parse_rm_cell(struct jdb_changelog_rec* rec, struct jdb_changelog_rm_cell* s){
 	
 	/*
 		args {
@@ -569,7 +569,7 @@ static inline int _jdb_jrnl_chk_rm_cell(struct jdb_changelog_rec* rec, struct jd
 	return 0;
 }
 
-static inline int _jdb_jrnl_chk_update_cell(struct jdb_changelog_rec* rec, struct jdb_jrnl_update_cell* s){
+static inline int _jdb_changelog_parse_update_cell(struct jdb_changelog_rec* rec, struct jdb_changelog_update_cell* s){
 	
 	/*
 		args {
@@ -617,6 +617,8 @@ static inline void _jdb_free_changelog_list(struct jdb_changelog_entry** first){
 static inline int _jdb_jrnl_load_all_recs(struct jdb_handle* h, struct jdb_changelog_entry** first){
 	
 	struct jdb_changelog_entry *entry, *last;
+	
+	_wdeb_io(L"loading all records...");
 
 	lseek(h->jfd, 0, SEEK_SET);
 	*first = NULL;
@@ -686,37 +688,177 @@ int _jdb_jrnl_check_chid_bounds(struct jdb_handle* h){
 	
 }
 
-static inline int _jdb_jrnl_run_rec_cmd(struct jdb_handle* h, struct jdb_changelog_entry* first){
-	struct jdb_changelog_entry* entry;
+static inline int _jdb_changelog_run_create_table(struct jdb_handle* h,
+			struct jdb_changelog_create_table* create_table){
+	return jdb_create_table(h,
+				create_table->name,
+				*(create_table->nrows),
+				*(create_table->ncols),
+				*(create_table->flags),
+				*(create_table->indexes)
+				);
+}
+
+static inline int _jdb_changelog_run_rm_table(struct jdb_handle* h,
+			struct jdb_changelog_rm_table* rm_table){
+	return jdb_rm_table(h,
+				rm_table->name
+				);
+}
+
+static inline int _jdb_changelog_run_add_typedef(struct jdb_handle* h,
+			struct jdb_changelog_add_typedef* add_typedef){
+	return jdb_add_typedef(h,
+				add_typedef->tname,
+				*(add_typedef->type_id),
+				*(add_typedef->base),
+				*(add_typedef->len),
+				*(add_typedef->flags)
+				);
+}
+
+static inline int _jdb_changelog_run_rm_typedef(struct jdb_handle* h,
+			struct jdb_changelog_rm_typedef* rm_typedef){
+	return jdb_rm_typedef(h,
+				rm_typedef->tname,
+				*(rm_typedef->type_id)
+				);
+}
+
+static inline int _jdb_changelog_run_assign_coltype(struct jdb_handle* h,
+			struct jdb_changelog_assign_coltype* assign_coltype){
+	return jdb_assign_col_type(h,
+				assign_coltype->tname,
+				*(assign_coltype->type_id),
+				*(assign_coltype->col)
+				);
+}
+
+static inline int _jdb_changelog_run_rm_coltype(struct jdb_handle* h,
+			struct jdb_changelog_rm_coltype* rm_coltype){
+	return jdb_rm_col_type(h,
+				rm_coltype->tname,
+				*(rm_coltype->col)
+				);
+}
+
+static inline int _jdb_changelog_run_create_cell(struct jdb_handle* h,
+			struct jdb_changelog_create_cell* create_cell){
+	return jdb_create_cell(h,
+				create_cell->tname,
+				*(create_cell->col),
+				*(create_cell->row),
+				create_cell->data,
+				*(create_cell->datalen),
+				*(create_cell->data_type)
+				);
+}
+
+static inline int _jdb_changelog_run_rm_cell(struct jdb_handle* h,
+			struct jdb_changelog_rm_cell* rm_cell){
+	return jdb_rm_cell(h,
+				rm_cell->tname,
+				*(rm_cell->col),
+				*(rm_cell->row)
+				);
+}
+
+static inline int _jdb_changelog_run_update_cell(struct jdb_handle* h,
+			struct jdb_changelog_update_cell* update_cell){
+	return jdb_update_cell(h,
+				update_cell->tname,
+				*(update_cell->col),
+				*(update_cell->row),
+				update_cell->data,
+				*(update_cell->datalen)				
+				);
+}
+
+static inline int _jdb_changelog_run_rec_cmd(struct jdb_handle* h, struct jdb_changelog_entry* entry){
+		
+	struct jdb_changelog_create_table	create_table;
+	struct jdb_changelog_rm_table		rm_table;
+	struct jdb_changelog_add_typedef	add_typedef;
+	struct jdb_changelog_rm_typedef		rm_typedef;
+	struct jdb_changelog_assign_coltype	assign_coltype;
+	struct jdb_changelog_rm_coltype		rm_coltype;
+	struct jdb_changelog_create_cell	create_cell;
+	struct jdb_changelog_rm_cell		rm_cell;
+	struct jdb_changelog_update_cell	update_cell;
 	
-	for(entry = first; entry; entry = entry->next){
-		switch(entry->rec.hdr.cmd){
-			
-			case JDB_CMD_CREATE_TABLE:
-				break;
-			case JDB_CMD_RM_TABLE:
-				break;			
-			case JDB_CMD_ADD_TYPEDEF:
-				break;
-			case JDB_CMD_RM_TYPEDEF:
-				break;
-			case JDB_CMD_ASSIGN_COLTYPE:
-				break;
-			case JDB_CMD_RM_COLTYPE:
-				break;				
-			case JDB_CMD_CREATE_CELL:
-				break;
-			case JDB_CMD_RM_CELL:
-				break;
-			case JDB_CMD_UPDATE_CELL:
-				break;			
-			
-			default:
-				break;
-		}
+	switch(entry->rec.hdr.cmd){
+		
+		case JDB_CMD_CREATE_TABLE:
+			if((ret = _jdb_changelog_parse_create_table(
+				entry, &create_table)) < 0) return ret;
+			return _jdb_changelog_run_create_table(h,
+				&create_table);
+			break;
+		case JDB_CMD_RM_TABLE:
+			if((ret = _jdb_changelog_parse_rm_table(
+				entry, &rm_table)) < 0) return ret;
+			return _jdb_changelog_run_rm_table(h,
+				&rm_table);
+			break;			
+		case JDB_CMD_ADD_TYPEDEF:
+			if((ret = _jdb_changelog_parse_add_typedef(
+				entry, &add_typedef)) < 0) return ret;
+			return _jdb_changelog_run_add_typedef(h,
+				&add_typedef);
+			break;
+		case JDB_CMD_RM_TYPEDEF:
+			if((ret = _jdb_changelog_parse_rm_typedef(
+				entry, &rm_typedef)) < 0) return ret;
+			return _jdb_changelog_run_rm_typedef(h,
+				&rm_typedef);
+			break;
+		case JDB_CMD_ASSIGN_COLTYPE:
+			if((ret = _jdb_changelog_parse_assign_coltype(
+				entry, &assign_coltype)) < 0) return ret;
+			return _jdb_changelog_run_assign_coltype(h,
+				&assign_coltype);
+			break;
+		case JDB_CMD_RM_COLTYPE:
+			if((ret = _jdb_changelog_parse_rm_coltype(
+				entry, &rm_coltype)) < 0) return ret;
+			return _jdb_changelog_run_rm_coltype(h,
+				&rm_coltype);
+			break;				
+		case JDB_CMD_CREATE_CELL:
+			if((ret = _jdb_changelog_parse_create_cell(
+				entry, &create_cell)) < 0) return ret;
+			return _jdb_changelog_run_create_cell(h,
+				&create_cell);
+			break;
+		case JDB_CMD_RM_CELL:
+			if((ret = _jdb_changelog_parse_rm_cell(
+				entry, &rm_cell)) < 0) return ret;
+			return _jdb_changelog_run_rm_cell(h,
+				&rm_cell);
+			break;
+		case JDB_CMD_UPDATE_CELL:
+			if((ret = _jdb_changelog_parse_update_cell(
+				entry, &update_cell)) < 0) return ret;
+			return _jdb_changelog_run_update_cell(h,
+				&update_cell);
+			break;
+		
+		default:
+			return -JE_TYPE;
+			break;
 	}
+		
+	return 0;
+}
+
+static inline int _jdb_changelog_run_rec_cmd_list(struct jdb_handle* h, struct jdb_changelog_entry* first){
+	struct jdb_changelog_entry* entry;
+	int ret;
 	
-	return -JE_IMPLEMENT;
+	for(entry = first; entry; entry = entry->next)
+		if((ret = _jdb_changelog_run_rec_cmd(h, entry)) < 0) return ret;	
+	
+	return 0;
 }
 
 static inline int _jdb_jrnl_rm_expired_chid(struct jdb_handle* h, struct jdb_changelog_entry* first){
@@ -739,6 +881,9 @@ static inline int _jdb_jrnl_rm_expired_chid(struct jdb_handle* h, struct jdb_cha
 
 static inline int _jdb_jrnl_trunc(struct jdb_handle* h){
 	int ret;
+	
+	_wdeb_io(L"truncating journal...");
+	
 	close(h->jfd);
 	
 	ret = _jdb_jrnl_open(h, h->conf.filename, JDB_JRNL_TRUNC);
@@ -750,28 +895,96 @@ int _jdb_jrnl_recover(struct jdb_handle* h){
 	int ret;
 	struct jdb_changelog_entry* first;
 	
+	_wdeb_io(L"recovering journal...");
+	
 	if((ret = _jdb_jrnl_load_all_recs(h, &first)) < 0) return ret;
 	
 	if(!_jdb_jrnl_rm_expired_chid(h, first)) return 0;
 	
-	if((ret = _jdb_jrnl_run_rec_cmd(h, first)) < 0) return ret;
+	if((ret = _jdb_changelog_run_rec_cmd_list(h, first)) < 0) return ret;
 	
 	//if recovered successfully, truncate old file!
 	
 	return _jdb_jrnl_trunc(h);
 }
 
-//int _jdb_changelog_backup_
+int _jdb_changelog_assm_rec(uchar** buf, size_t* busize, struct jdb_handle* h, uint64_t chid , uchar cmd, int ret, uchar nargs, size_t* argsize, ...){
 
-int _jdb_changelog_reg(struct jdb_handle* h, uint64_t chid , uchar cmd, int ret, uchar nargs, size_t* argsize, ...){
+	va_list ap;
+	uchar n;
+	size_t pos;	
+	struct jdb_changelog_hdr hdr;
+	
+	*bufsize = sizeof(struct jdb_changelog_hdr);
+	pos = *bufsize;
+	for(n = 0; n < nargs; n++){
+		*bufsize += argsize[n];
+	}
+	
+	*buf = (uchar*)malloc(*bufsize);
+	if(!(*buf)){
+		return -JE_MALOC;
+	}	
+	
+	va_start(ap, argsize);
+	
+	for(n = 0; n < nargs; n++){
+			
+		//copy data
+		memcpy((*buf) + pos, va_arg(ap, uchar*), argsize[n]);
+		pos += argsize[n];
+		_wdeb_proc(L"pos = %u (after adding argsize[%u])", pos, n);
+		
+	}
+	
+	va_end(ap);
+	
+	hdr.recsize = *bufsize;	
+	hdr.chid = chid;
+	hdr.cmd = cmd;
+	hdr.ret = ret;
+	hdr.nargs = nargs;
+
+	_wdeb_reg(L"recsize = %u, ret = %i, cmd = %u, chid = %llu, nargs = %u",
+		hdr.recsize, hdr.ret, hdr.cmd, hdr.chid, hdr.nargs);
+	
+	_jdb_jrnl_hdr_to_buf(&hdr, *buf);
+	
+	return 0;
+	
+}
+
+int _jdb_changelog_reg(	struct jdb_handle* h, uint64_t chid , uchar cmd,
+			int ret, uchar nargs, size_t* argsize, ...){
 	va_list ap;
 	uchar n;
 	size_t bufsize;
 	size_t pos;	
 	uchar* buf;
-	struct jdb_changelog_hdr hdr;
+	struct jdb_changelog_hdr hdr;	
+	char fl;
+	
+	_wdeb_reg(L"registerning command 0x%x", cmd);
+	
+	if((h->hdr.flags & JDB_O_SNAP) || (h->hdr.flags & JDB_O_UNDO)){
+		//store the previous record;
+		switch(cmd){
+			case JDB_CMD_RM_TABLE:
+				break;
+			case JDB_CMD_RM_TYPEDEF:
+				break;
+			case JDB_CMD_RM_COLTYPE:
+				break;
+			case JDB_CMD_RM_CELL:
+				break;
+			case JDB_CMD_UPDATE_CELL:
+				break;														
+			default:
+				break;
+		}
+	}
 
-	if(!(h->flags & JDB_O_JRNL)) return -JE_NOJOURNAL;	
+	if(h->hdr.flags & JDB_O_JRNL){//JOURNALLING
 
 	bufsize = sizeof(struct jdb_changelog_hdr);
 	//if(nargs) bufsize += sizeof(uchar); //for nargs
@@ -814,6 +1027,9 @@ int _jdb_changelog_reg(struct jdb_handle* h, uint64_t chid , uchar cmd, int ret,
 	//if(nargs) buf[sizeof(struct jdb_changelog_hdr)] = nargs;
 	
 	_jdb_jrnl_request_write(h, hdr.recsize, buf);
+	
+	}//end of if JOURNALLING
+	
 	
 	return 0;
 }

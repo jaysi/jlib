@@ -87,13 +87,13 @@ struct jdb_jrnl_create_table{
 	uint32_t* indexes;
 };
 #define JDB_CMD_RM_TABLE		0x02
-struct jdb_jrnl_rm_table{
+struct jdb_changelog_rm_table{
 	wchar_t* name;
 };
 
 //type
 #define JDB_CMD_ADD_TYPEDEF		0x03
-struct jdb_jrnl_add_typedef{
+struct jdb_changelog_add_typedef{
 	wchar_t* tname;
 	jdb_data_t* type_id;
 	jdb_data_t* base;
@@ -101,25 +101,25 @@ struct jdb_jrnl_add_typedef{
 	uchar* flags;
 };
 #define JDB_CMD_RM_TYPEDEF		0x04
-struct jdb_jrnl_rm_typedef{
+struct jdb_changelog_rm_typedef{
 	wchar_t* tname;
 	jdb_data_t* type_id;
 };
 #define JDB_CMD_ASSIGN_COLTYPE		0x05
-struct jdb_jrnl_assign_coltype{
+struct jdb_changelog_assign_coltype{
 	wchar_t* tname;
 	jdb_data_t* type_id;
 	uint32_t* col;
 };
 #define JDB_CMD_RM_COLTYPE		0x06
-struct jdb_jrnl_rm_coltype{
+struct jdb_changelog_rm_coltype{
 	wchar_t* tname;	
 	uint32_t* col;
 };
 
 //cell
 #define JDB_CMD_CREATE_CELL		0x07
-struct jdb_jrnl_create_cell{
+struct jdb_changelog_create_cell{
 	wchar_t* tname;
 	uint32_t* col;
 	uint32_t* row;
@@ -128,13 +128,13 @@ struct jdb_jrnl_create_cell{
 	uchar* data_type;
 };
 #define JDB_CMD_RM_CELL			0x08
-struct jdb_jrnl_rm_cell{
+struct jdb_changelog_rm_cell{
 	wchar_t* tname;
 	uint32_t* col;
 	uint32_t* row;
 };
 #define JDB_CMD_UPDATE_CELL		0x09
-struct jdb_jrnl_update_cell{
+struct jdb_changelog_update_cell{
 	wchar_t* tname;
 	uint32_t* col;
 	uint32_t* row;

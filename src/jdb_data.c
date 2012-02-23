@@ -1,11 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_alloc	_wdeb
-#define _wdeb_data_ptr	_wdeb
-#define _wdeb_add	_wdeb
-#define _wdeb_load	_wdeb
-#define _wdeb_crc	_wdeb
-
 int _jdb_create_data_blk(	struct jdb_handle* h, struct jdb_table* table,
 				uchar dtype, uchar flags){
 				

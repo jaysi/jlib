@@ -7,8 +7,6 @@
 	** ALL VALIDITY CHECKS MUST BE DONE BEFORE CALLING THIESE METHODS
 */
 
-#define _wdeb_crc _wdeb
-#define _wdeb_data _wdeb
 
 int _jdb_pack_hdr(struct jdb_hdr *hdr, uchar * buf)
 {

@@ -1,9 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_start(f, a...)
-#define _wdeb_end(f, a...)
-#define _wdeb_wr(f, a...)
-
 void* _jdb_write_thread(void* arg){
 	struct jdb_handle* h = (struct jdb_handle*)arg;
 	int oldcancelstate;

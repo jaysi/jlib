@@ -14,7 +14,7 @@
 #include "jtypes.h"
 #include "jtable.h"
 #include "jcs.h"
-#include "debug.h"
+#include "jdb_debug.h"
 #include "jcrypt.h"
 #ifndef JDB_SINGLE_THREAD
 #define _J_USE_PTHREAD

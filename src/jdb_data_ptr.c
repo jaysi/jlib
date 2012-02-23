@@ -1,11 +1,6 @@
 #include "jdb.h"
 #include "debug.h"
 
-#define _wdeb_data_ptr	_wdeb
-#define _wdeb_load	_wdeb
-#define _wdeb_find	_wdeb
-#define _wdeb_free	_wdeb
-
 int _jdb_free_data_ptr_list(struct jdb_table *table)
 {
 	struct jdb_cell_data_ptr_blk *data_ptr, *first;

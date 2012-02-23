@@ -1,10 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_io _wdeb
-#define _wdeb_crc _wdeb
-#define _wdeb_map(f, a...)
-#define _wdeb_upack _wdeb
-
 int _jdb_write_block(struct jdb_handle *h, uchar * block, jdb_bid_t bid,
 		     uchar flags)
 {

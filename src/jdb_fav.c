@@ -1,11 +1,6 @@
 #include "jdb.h"
 #include "debug.h"
 
-#define _wdeb_type _wdeb
-#define _wdeb_load _wdeb
-#define _wdeb_data_ptr	_wdeb
-#define _wdeb_ch _wdeb
-
 int _jdb_create_fav(struct jdb_handle *h, struct jdb_table *table)
 {
 

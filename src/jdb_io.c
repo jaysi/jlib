@@ -1,8 +1,5 @@
 #include "jdb.h"
 
-#define _wdeb_io(f, a...)
-#define _wdeb_crc(f, a...)
-
 int _jdb_seek_write(struct jdb_handle *h, uchar * buf, size_t len, off_t offset)
 {
 	_wdeb_io(L"seeking to offset < %u > to WRITE < %u > bytes on fd < %i >",
