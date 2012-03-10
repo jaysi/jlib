@@ -27,7 +27,7 @@ void* _jdb_write_thread(void* arg){
 		
 		//write here
 		
-		_wdeb_wr(L"got write request");	
+		_wdeb_wr(L"got write request");
 		
 		if(entry->hdrbuf){
 			_wdeb_wr(L"header has been modified.");
@@ -41,7 +41,9 @@ void* _jdb_write_thread(void* arg){
 			_jdb_write_block(h, entry->buf + pos, entry->bid_list[i], 0x00);
 			assert(i <= entry->nblocks);
 			i++;
-		}				
+		}
+		
+		_jdb_flush_snapshots(h);
 		
 		_wdeb_wr(L"done writing.");
 		

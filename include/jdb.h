@@ -152,7 +152,8 @@ struct jdb_conf {
 	uint32_t max_blocks;
 	uint32_t fav_load;//number of favourite blocks to load
 	wchar_t *filename;
-	wchar_t *key;	
+	wchar_t *key;
+	uchar	str_key[JDB_STR_KEY_SIZE];
 }__attribute__((packed));
 
 /*
@@ -180,7 +181,7 @@ struct jdb_handle {
 	jthread_t jrnlthid;
 	jmx_t jmx;
 	jsem_t jsem;
-	uint32_t jopid;
+	//uint32_t jopid;
 	
 	struct jdb_jrnl_fifo jrnl_fifo;
 
@@ -206,6 +207,13 @@ struct jdb_handle {
 	
 	//global indexing
 	struct jdb_index0_blk_list index0_list;
+	
+	//undo
+	struct jdb_changelog_list undo_list;
+	struct jdb_changelog_list redo_list;
+	
+	//snapshots
+	struct jdb_snapshot_list snapshot_list;
 };
 
 /*				table-flags					*/
@@ -265,7 +273,7 @@ extern "C" {
 			   wchar_t* table_name, uchar type_id);
 	int jdb_typedef_flags(	struct jdb_handle* h, wchar_t* table_name,
 				jdb_data_t type_id, uchar* flags);
-	uchar jdb_find_col_type(struct jdb_handle *h,
+	jdb_data_t jdb_find_col_type(struct jdb_handle *h,
 				wchar_t* table_name, uint32_t col);
 	int jdb_assign_col_type(struct jdb_handle *h,
 				wchar_t* table_name, uchar type_id,

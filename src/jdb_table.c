@@ -27,16 +27,18 @@ int jdb_find_table(struct jdb_handle *h, wchar_t * name)
 
 int
 jdb_create_table(struct jdb_handle *h, wchar_t * name,
-		 uint32_t nrows, uint32_t ncols, uchar flags, uint16_t indexes)
+		 uint32_t nrows, uint32_t ncols, uchar flags,
+		 uint16_t indexes)
 {
 
 	struct jdb_table *table;
 	jdb_tid_t tid;
 	size_t namelen;
 
-	//for journalling
+	//for journalling/snapshots/undo
 	uint64_t chid;
-	size_t argsize[5];
+	uint32_t argsize[5];
+	struct jdb_changelog_rec* rec;
 
 	_wdeb_table(L"creating table %S, R: %u, C: %u", name, nrows, ncols);
 
@@ -45,6 +47,10 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	if (h->fd == -1)
 		return -JE_NOOPEN;
+		
+	rec = (struct jdb_changelog_rec*)malloc(
+					sizeof(struct jdb_changelog_rec));
+	if(!rec) return -JE_MALOC;
 
 	chid = _jdb_get_chid(h, 1);
 	argsize[0] = WBYTES(name);
@@ -52,7 +58,10 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	argsize[2] = sizeof(uint32_t);
 	argsize[3] = sizeof(uchar);
 	argsize[4] = sizeof(uint16_t);
-	_jdb_changelog_reg(h, chid, JDB_CMD_CREATE_TABLE, 0, 5, argsize, name, nrows, ncols, flags, indexes);	
+	_jdb_changelog_assm_rec(rec, chid, JDB_CMD_CREATE_TABLE,
+				0, 5, argsize,
+				name, nrows, ncols, flags, indexes);
+	_jdb_changelog_reg(h, rec);
 
 	/*
 	   1. is exists?
@@ -63,7 +72,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 
 	if (_jdb_find_first_map_match(h, 0, 0, tid, 0, JDB_MAP_CMP_TID)
 	    != JDB_ID_INVAL){
-		_jdb_changelog_reg_end(h, chid, -JE_EXISTS);
+		_jdb_changelog_reg_end(h, rec, -JE_EXISTS);
 		return -JE_EXISTS;
 	}
 
@@ -71,14 +80,14 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 	     wtojcs_len(name,
 			h->hdr.blocksize - (sizeof(struct jdb_table_def_blk_hdr)
 					    + 1))) == ((size_t) - 1)){
-		_jdb_changelog_reg_end(h, chid, -JE_TOOLONG);
+		_jdb_changelog_reg_end(h, rec, -JE_TOOLONG);
 		return -JE_TOOLONG;
 	}
 
 	table = (struct jdb_table *)malloc(sizeof(struct jdb_table));
 
 	if (!table){
-		_jdb_changelog_reg_end(h, chid, -JE_MALOC);
+		_jdb_changelog_reg_end(h, rec, -JE_MALOC);
 		return -JE_MALOC;
 	}
 
@@ -90,7 +99,7 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 		_wdeb(L"failed to get table_def_bid");
 
 		free(table);
-		_jdb_changelog_reg_end(h, chid, -JE_LIMIT);
+		_jdb_changelog_reg_end(h, rec, -JE_LIMIT);
 		return -JE_LIMIT;
 
 	}
@@ -155,7 +164,8 @@ jdb_create_table(struct jdb_handle *h, wchar_t * name,
 		h->table_list.cnt++;
 	}
 
-	_jdb_changelog_reg_end(h, chid, 0);
+	_jdb_changelog_reg_end(h, rec, 0);	
+		
 	return 0;
 
 }
@@ -420,20 +430,20 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 	struct jdb_typedef_blk* typedef_blk;
 	struct jdb_fav_blk* fav_blk;
 	int ret = 0, ret2;
-	
+
 	if(h->hdr.flags & JDB_O_WR_THREAD){
 		return _jdb_request_table_write(h, table);
 	}
-	
+
 	_wdeb_wr(L"writing data blocks...");
-		
+
 	for(data_blk = table->data_list.first; data_blk; data_blk = data_blk->next){
 		if(data_blk->write){
 			ret2 = _jdb_write_data_blk(h, data_blk);
 			if(!ret && ret2) ret = ret2;
 		}
 	}
-	
+
 	_wdeb_wr(L"ret = %i, writing data pointers...", ret);
 
 	for(data_ptr_blk = table->data_ptr_list.first; data_ptr_blk; data_ptr_blk = data_ptr_blk->next){
@@ -442,9 +452,9 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 			if(!ret && ret2) ret = ret2;
 		}
 	}	
-	
+
 	_wdeb_wr(L"ret = %i, writing celldef blocks...", ret);
-	
+
 	for(celldef_blk = table->celldef_list.first; celldef_blk; celldef_blk = celldef_blk->next){
 		if(celldef_blk->write){
 			ret2 = _jdb_write_celldef_blk(h, celldef_blk);
@@ -453,7 +463,7 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 	}
 	
 	_wdeb_wr(L"ret = %i, writing column type definitions...", ret);
-	
+
 	for(col_typedef_blk = table->col_typedef_list.first; col_typedef_blk; col_typedef_blk = col_typedef_blk->next){
 		if(col_typedef_blk->write){
 			ret2 = _jdb_write_col_typedef_blk(h, col_typedef_blk);
@@ -478,16 +488,16 @@ int _jdb_sync_table_by_ptr(struct jdb_handle* h, struct jdb_table* table){
 			if(!ret && ret2) ret = ret2;
 		}
 	}
-	
+
 	_wdeb_wr(L"ret = %i, writing table definition blocks...", ret);	
-	
+
 	if(table->main.write){
 		ret2 = _jdb_write_table_def_blk(h, table);
 		if(!ret && ret2) ret = ret2;
 	}
-	
+
 	_wdeb_wr(L"ret = %i", ret);
-	
+
 	return ret;
 }
 
@@ -584,11 +594,17 @@ int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 	
 	//journalling
 	uint64_t chid;
-	size_t argsize;
+	size_t argsize;	
+	struct jdb_changelog_rec* rec;
+	
+	rec = (struct jdb_changelog_rec*)malloc(sizeof(struct jdb_changelog_rec));
+	if(!rec) return -JE_MALOC;
 	
 	chid = _jdb_get_chid(h, 1);
 	argsize = WBYTES(name);
-	_jdb_changelog_reg(h, chid, JDB_CMD_RM_TABLE, 0, 1, &argsize, name);
+	_jdb_changelog_assm_rec(rec, chid, JDB_CMD_RM_TABLE, 0, 1,
+				&argsize, name);
+	_jdb_changelog_reg(h, rec);
 	
 	prev = h->table_list.first;
 	entry = prev;
@@ -614,33 +630,35 @@ int jdb_rm_table(struct jdb_handle *h, wchar_t * name)
 	}
 	
 	if(!entry){
-		_jdb_changelog_reg_end(h, chid, -JE_NOTFOUND);
+		_jdb_changelog_reg_end(h, rec, -JE_NOTFOUND);
 		return -JE_NOTFOUND;	
 	}
-	
+
 	_jdb_rm_map_entries_by_tid(h, _jdb_get_tid(name));
-	
-	_jdb_free_cell_list(entry); //put before everything
-	_jdb_free_typedef_list(entry);
-	_jdb_free_col_typedef_list(entry);
-	_jdb_free_data_ptr_list(entry);
-	_jdb_free_data_list(entry);
-	_jdb_free_celldef_list(entry);
-	_jdb_free_fav_list(entry);
-	_jdb_free_table_def(entry);	
+
+	if(!(h->hdr.flags & JDB_O_UNDO) && !(h->hdr.flags & JDB_O_SNAP)){
+		_jdb_free_cell_list(entry); //put before everything
+		_jdb_free_typedef_list(entry);
+		_jdb_free_col_typedef_list(entry);
+		_jdb_free_data_ptr_list(entry);
+		_jdb_free_data_list(entry);
+		_jdb_free_celldef_list(entry);
+		_jdb_free_fav_list(entry);
+		_jdb_free_table_def(entry);
+	}		
 
 	_jdb_lock_handle(h);
 
 	_wdeb_data_ptr(L"max_blocks = %u", h->hdr.max_blocks);
-	
+
 	h->hdr.ntables--;
-	
+
 	//h->hdr.nblocks++;
 	//h->hdr.ndata_ptrs++;
 	_jdb_set_handle_flag(h, JDB_HMODIF, 0);
 	_jdb_unlock_handle(h);			
 
-	_jdb_changelog_reg_end(h, chid, 0);
+	_jdb_changelog_reg_end(h, rec, 0);
 	
 	return 0;
 }

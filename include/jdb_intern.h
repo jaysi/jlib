@@ -107,6 +107,7 @@ struct jdb_hdr {
 #define JDB_BTYPE_CELL_DATA_PTR	0x09
 #define JDB_BTYPE_INDEX		0x0a	/*index, see map_entry's dtype field*/
 #define JDB_BTYPE_TABLE_FAV	0x0b	/*block-rating*/
+#define JDB_BTYPE_SNAPSHOT	0x0c	/*snapshot block*/
 #define JDB_BTYPE_VOID		0xff	/*void blocks type, mainly for
 					   memmory allocations */
 
@@ -143,6 +144,11 @@ struct jdb_map_blk_entry {
 	jdb_data_t dtype;
 	jdb_bent_t nful;
 	jdb_tid_t tid;
+	/*
+	   the tid field is not needed in GLOBAL blocks like snapshots,
+	   thus, it means:
+			total bytes used in block: snapshot
+	*/	
 	/*
 	   jdb_bid_t bid;
 	   don't need this, there is a formula to find the bid if there is
@@ -560,7 +566,6 @@ struct jdb_wr_fifo{
 	struct jdb_wr_fifo_entry* first, *last;
 };
 
-
 /*
 	init / cleanup
 */
@@ -811,12 +816,19 @@ void _jdb_free_fav_list(struct jdb_table *table);
 int _jdb_load_cells(struct jdb_handle *h, struct jdb_table *table, int loaddata);
 int _jdb_request_table_write(struct jdb_handle* h, struct jdb_table* table);
 int _jdb_hdr_to_buf(struct jdb_handle* h, uchar** buf, int alloc);
-		    
-int _jdb_changelog_reg(struct jdb_handle* h, uint64_t chid , uchar cmd, int ret, uchar nargs, size_t* argsize, ...);
+
+uint64_t _jdb_get_chid(struct jdb_handle *h, int lock);    
+int _jdb_changelog_reg(struct jdb_handle* h, struct jdb_changlog_rec* rec);
+int _jdb_changelog_reg_end(struct jdb_handle* h, struct jdb_changlog_rec* rec,
+				int ret);			
+int _jdb_changelog_assm_argbuf(uchar** buf, size_t* bufsize, uchar nargs,
+				size_t* argsize, ...);
+int _jdb_changelog_assm_rec(	struct jdb_changelog_rec* rec, uint64_t chid,
+				uchar cmd, int ret, uchar nargs,
+				size_t* argsize, ...);
+
 int _jdb_jrnl_recover(struct jdb_handle* h);
-int _jdb_changelog_reg_end(struct jdb_handle* h, uint64_t chid, int ret);			
 int _jdb_jrnl_open(struct jdb_handle *h, wchar_t * filename, uint16_t flags);
-uint64_t _jdb_get_chid(struct jdb_handle *h, int lock);
 
 /*
 	MACROs

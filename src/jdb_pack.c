@@ -872,11 +872,6 @@ int _jdb_pack_fav(struct jdb_handle* h, struct jdb_fav_blk *blk,
 	jdb_bent_t i;
 	jdb_bsize_t pos;
 	uint32_t crc32;
-	
-	if(h->hdr.crc_type != JDB_CRC_NONE){
-		//this is strange... but fixes CRC errors!!!		
-		memset(buf, '\0', h->hdr.blocksize);
-	}	
 
 	pack(buf, "ccl", blk->hdr.type, blk->hdr.flags, 0x00000000);
 
@@ -888,6 +883,8 @@ int _jdb_pack_fav(struct jdb_handle* h, struct jdb_fav_blk *blk,
 		     blk->entry[i].nhits);
 		pos += sizeof(struct jdb_fav_blk_entry);
 	}
+	
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);
 
 	if(h->hdr.crc_type != JDB_CRC_NONE){
 		crc32 = _jdb_crc32(buf, h->hdr.blocksize);
@@ -932,4 +929,75 @@ int _jdb_unpack_fav(struct jdb_handle* h, struct jdb_fav_blk *blk,
 
 	return 0;
 }
+
+int _jdb_pack_snapshot(struct jdb_handle* h, struct jdb_snapshot_blk *blk,
+			uchar * buf)
+{
+	jdb_bent_t i;
+	jdb_bsize_t pos;
+	uint32_t crc32;
+
+	pack(buf, "ccl", blk->hdr.type, blk->hdr.flags, 0x00000000);
+
+	pos = sizeof(struct jdb_snapshot_blk_hdr);
+
+	for (i = 0; i < blk->nent; i++) {
+		pack(buf + pos, "lthh",
+		     blk->entry[i].hdr.bid,
+		     blk->entry[i].hdr.chid,
+		     blk->entry[i].hdr.blk_off,
+		     blk->entry[i].hdr.datalen);
+		pos += sizeof(struct jdb_snapshot_blk_entry_hdr);
+		memcpy(buf + pos, entry->data, entry->hdr.datalen);
+		pos += blk->entry[i].hdr.datalen;
+	}
+	
+	
+	
+	memset(buf + pos, '\0', h->hdr.blocksize - pos);
+
+	if(h->hdr.crc_type != JDB_CRC_NONE){
+		crc32 = _jdb_crc32(buf, h->hdr.blocksize);
+		pack(buf + sizeof(struct jdb_snapshot_blk_hdr) - sizeof(uint32_t), "l",
+		     crc32);
+	}
+
+	return 0;
+}
+
+int _jdb_unpack_snapshot(struct jdb_handle* h, struct jdb_snapshot_blk *blk,
+			uchar * buf)
+{
+	jdb_bent_t i;
+	jdb_bsize_t pos;
+	uint32_t crc32;
+
+	if(h->hdr.crc_type != JDB_CRC_NONE){
+		unpack(buf + sizeof(struct jdb_snapshot_blk_hdr) - sizeof(uint32_t), "l",
+		       &crc32);
+		pack(buf + sizeof(struct jdb_snapshot_blk_hdr) - sizeof(uint32_t), "l",
+		     0x00000000);
+		if (crc32 != _jdb_crc32(buf, h->hdr.blocksize))
+			return -JE_CRC;
+	}
+
+	unpack(buf, "cc", &blk->hdr.type, &blk->hdr.flags);
+	
+	if(blk->hdr.type != JDB_BTYPE_TABLE_snapshot) return -JE_TYPE;
+
+	if(h->hdr.crc_type != JDB_CRC_NONE)
+		blk->hdr.crc32 = crc32;
+
+	pos = sizeof(struct jdb_snapshot_blk_hdr);
+
+	for (i = 0; i < h->hdr.snapshot_bent; i++) {
+		unpack(buf + pos, "ll",
+		       &blk->entry[i].bid,
+		       &blk->entry[i].nhits);
+		pos += sizeof(struct jdb_snapshot_blk_entry);
+	}
+
+	return 0;
+}
+
 

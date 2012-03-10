@@ -1,6 +1,6 @@
--- add encryption to the journal / snapshots
+-- add encryption to the journal
 -- add snapshot support
 -- write update cell code
 -- add indexing support
--- add undo support (HINT: use journalling and snapshots)
--- add des3 encryption support
+-- add undo support (HINT: use snapshots)
+-- add des3 encryption support [DONE]

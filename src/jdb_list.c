@@ -4,10 +4,10 @@
 int jdb_init_filter(	struct jdb_filter* filter, size_t n, uint32_t col_start,
 			uint32_t col_end, uint32_t row_start, uint32_t row_end,
 			uint32_t sort_cmp_col, void* sort_cmp_fn){
-	
+
 	filter->entry = (struct jdb_filter_entry*)malloc(n*sizeof(struct jdb_filter_entry));	
 	if(!filter->entry) return -JE_MALOC;
-	
+
 	for(filter->cnt = 0; filter->cnt < n; filter->cnt++){
 		filter->entry[filter->cnt].type = 0x00;
 	}

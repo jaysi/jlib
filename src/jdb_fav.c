@@ -58,17 +58,13 @@ int _jdb_create_fav(struct jdb_handle *h, struct jdb_table *table)
 	if (!table->fav_list.first) {
 
 		table->fav_list.first = blk;
-
 		table->fav_list.last = blk;
-
 		table->fav_list.cnt = 1UL;
 
 	} else {
 
 		table->fav_list.last->next = blk;
-
 		table->fav_list.last = blk;
-
 		table->fav_list.cnt++;
 
 	}
@@ -86,34 +82,22 @@ int _jdb_find_fav(struct jdb_handle *h,
 	jdb_bent_t bent;
 
 	for (*blk = table->fav_list.first; *blk; *blk = (*blk)->next) {
-
 		for (bent = 0; bent < h->hdr.fav_bent; bent++) {
-
 			if ((*blk)->entry[bent].bid == bid) {
-
 				*entry = &((*blk)->entry[bent]);
-
 				return 0;
-
 			}
-
 		}
-
 	}
-
 	return -JE_NOTFOUND;
-
 }
 
 int _jdb_load_fav(struct jdb_handle *h, struct jdb_table *table)
 {
 
 	jdb_bid_t *bid;
-
 	jdb_bid_t i, n;
-
 	int ret;
-
 	struct jdb_fav_blk *blk;	
 
 	ret =
@@ -122,25 +106,18 @@ int _jdb_load_fav(struct jdb_handle *h, struct jdb_table *table)
 				&n);
 
 	if (ret < 0) {
-
 		if (n)
 			free(bid);
-
 		return ret;
-
 	}
 
 	for (i = 0; i < n; i++) {
-
 		blk = (struct jdb_fav_blk *)
 		    malloc(sizeof(struct jdb_fav_blk));
 
 		if (!blk) {
-
 			free(bid);
-
 			return -JE_MALOC;
-
 		}
 
 		blk->entry = (struct jdb_fav_blk_entry *)
@@ -148,19 +125,13 @@ int _jdb_load_fav(struct jdb_handle *h, struct jdb_table *table)
 			   h->hdr.fav_bent);
 
 		if (!blk->entry) {
-
 			free(bid);
-
 			free(blk);
-
 			return -JE_MALOC;
-
 		}
 
 		blk->next = NULL;
-
 		blk->bid = bid[i];
-
 		blk->write = 0;
 		
 		_wdeb_load(L"Loading block #%u", blk->bid);
@@ -168,36 +139,22 @@ int _jdb_load_fav(struct jdb_handle *h, struct jdb_table *table)
 		ret = _jdb_read_fav_blk(h, blk);
 
 		if (ret < 0) {
-
 			free(bid);
-
 			free(blk->entry);
-
 			free(blk);
-
 			return ret;
-
 		}
 
 		if (!table->fav_list.first) {
-
 			table->fav_list.first = blk;
-
 			table->fav_list.last = blk;
-
 			table->fav_list.cnt = 1UL;
-
 		} else {
-
 			table->fav_list.last->next = blk;
-
 			table->fav_list.last =
 			    table->fav_list.last->next;
-
 			table->fav_list.cnt++;
-
 		}
-
 	}
 
 	return 0;
@@ -208,16 +165,12 @@ int _jdb_write_fav(struct jdb_handle *h, struct jdb_table *table)
 {
 
 	struct jdb_fav_blk *blk;
-
 	int ret, ret2 = 0;
 
 	for (blk = table->fav_list.first; blk; blk = blk->next) {
-
 		ret = _jdb_write_fav_blk(h, blk);
-
 		if (!ret2 && ret < 0)
 			ret2 = ret;
-
 	}
 
 	return ret2;
@@ -229,13 +182,9 @@ int _jdb_inc_fav(struct jdb_handle *h, struct jdb_table* table,
 {
 
 	struct jdb_fav_blk *blk;
-
 	struct jdb_fav_blk_entry *entry;
-
 	jdb_bid_t fav_blk_bid;
-
 	jdb_bent_t bent;
-
 	int ret;
 
 	_wdeb_ch(L"increasing fav of %u", bid);
@@ -257,7 +206,6 @@ int _jdb_inc_fav(struct jdb_handle *h, struct jdb_table* table,
 	_wdeb_type(L"bid #%u returned", bid);
 
 	if (fav_blk_bid == JDB_ID_INVAL) {
-
 		if ((ret = _jdb_create_fav(h, table)) < 0)
 			return ret;
 
@@ -266,34 +214,21 @@ int _jdb_inc_fav(struct jdb_handle *h, struct jdb_table* table,
 	} else {		
 		for(blk = table->fav_list.first; blk; blk = blk->next){
 			if(blk->bid == fav_blk_bid) break;
-		}
-		
-		
+		}				
 		if(!blk) return -JE_UNK;
-
-
 	}
 
 	for (bent = 0; bent < h->hdr.fav_bent; bent++) {
-
 		if (blk->entry[bent].bid == JDB_ID_INVAL) {
-
 			ret = _jdb_inc_map_nful_by_bid(h, blk->bid, 1);
-
 			if (ret < 0)
 				return ret;
-
 			blk->entry[bent].bid = bid;
-
 			blk->entry[bent].nhits = 1UL;
-
 			_JDB_SET_WR(h, blk, blk->bid, table, 1);
 			//blk->write = 1;
-			
 			_wdeb_type(L"returning");
-
 			return 0;
-
 		}
 	}
 
@@ -502,20 +437,13 @@ end:
 
 void _jdb_free_fav_list(struct jdb_table *table)
 {
-
 	struct jdb_fav_blk *del;
 
 	while (table->fav_list.first) {
-
 		del = table->fav_list.first;		
-
 		table->fav_list.first = table->fav_list.first->next;
-
 		free(del->entry);
-
 		free(del);
-
 	}
-
 }
 

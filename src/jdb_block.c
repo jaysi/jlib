@@ -1,10 +1,13 @@
 #include "jdb.h"
 
-int _jdb_write_block(struct jdb_handle *h, uchar * block, jdb_bid_t bid,
+int _jdb_write_block(struct jdb_handle *h, uchar* block, jdb_bid_t bid,
 		     uchar flags)
-{
-
+{		
 	int ret;
+	
+	if(h->hdr.flags & JDB_O_SNAP){
+		_jdb_create_snapshot(h, block, bid, flags);
+	}
 
 	_wdeb_io(L"WRITE block < %u >", bid);
 
@@ -19,7 +22,6 @@ int _jdb_write_block(struct jdb_handle *h, uchar * block, jdb_bid_t bid,
 	ret =
 	    _jdb_seek_write(h, block, h->hdr.blocksize,
 			    _jdb_blk_off(bid, JDB_HDR_SIZE, h->hdr.blocksize));
-
  end:
 
 	return ret;

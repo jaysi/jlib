@@ -145,16 +145,18 @@ int jdb_init(struct jdb_handle *h)
 {
 	h->map_list.first = NULL;
 	h->table_list.first = NULL;
+	h->index0_list.first = NULL;	
+	h->undo_list.first = NULL;
+	h->redo_list.first = NULL;
 	h->conf.filename = NULL;
 	h->conf.key = NULL;
 
 	h->jfd = -1;
-
 	h->fd = -1;
 
 	h->flags = 0;
 	
-	h->jopid = 0UL;
+	//h->jopid = 0UL;
 
 	memset(&h->hdr, 0, sizeof(struct jdb_hdr));
 
@@ -218,7 +220,11 @@ int _jdb_init_crypto(struct jdb_handle *h)
 	uchar key[32];
 	//uchar des3_key[24]; //3x8byte keys
 	
-	rc4_init((uchar *) h->conf.key, WBYTES(h->conf.key), &h->rc4);
+	/*
+		the rc4 is used for journal encryption, use random keys, but
+		write the key somewhere to enable journal recovery
+	*/
+	rc4_init((uchar *) h->conf.str_key, JDB_STR_KEY_SIZE, &h->rc4);
 
 	switch (h->conf.crypt_type) {
 	case JDB_CRYPT_NONE:
@@ -470,7 +476,7 @@ int jdb_open2(struct jdb_handle *h, int default_conf)
 	if(!ret){		
 		//journalling
 		ret = _jdb_jrnl_open(h, h->conf.filename, 0);
-		if(ret == -JE_EXISTS){
+		if(ret == JE_EXISTS){
 			ret = _jdb_jrnl_recover(h);
 		}	
 	}
